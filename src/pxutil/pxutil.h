@@ -13,6 +13,8 @@
 #include <signal.h>
 #include <stddef.h>
 #include <pwd.h>
+#include <sys/mman.h>
+#include <sys/wait.h>
 
 #include "list.h"
 
@@ -125,11 +127,17 @@ struct PxRegisteMessage
 	char		user_name[ MAXLEN_USER_NAME + 1 ] ;
 } ;
 
-struct PxRunPressing
+struct PxRunPressingMessage
 {
 	unsigned int	process_count ;
 	unsigned int	thread_count ;
 	char		run_command[ 256 + 1 ] ;
+} ;
+
+struct PxPerformanceStatMessage
+{
+	unsigned int	request_count ;
+	struct timeval	total_elapse ;
 } ;
 
 #endif
