@@ -7,8 +7,9 @@
 
 ###### 子目录配置区
 DIROBJS		= \
-			pxagent \
+			pxutil \
 			pxmanager \
+			pxagent \
 
 ###### 加载mktpl模板库
 #@ FILESYSTEM
