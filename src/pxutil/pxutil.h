@@ -11,6 +11,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <signal.h>
+#include <stddef.h>
+#include <pwd.h>
 
 #include "list.h"
 
@@ -109,9 +111,26 @@ struct NetAddress
 #define BLANK_DELIM	" \t\f\r\n"
 
 char *gettok( char *str , const char *delim );
-char *TrimEnter( char *str ) ;
+char *TrimEnter( char *str );
 
+char *GetUsernamePtr();
 
+int writen( int sock , char *send_buffer , int send_len , int *p_sent_len );
+int readn( int sock , char *recv_buffer , int recv_len , int *p_received_len );
+
+#define MAXLEN_USER_NAME	64
+
+struct PxRegisteMessage
+{
+	char		user_name[ MAXLEN_USER_NAME + 1 ] ;
+} ;
+
+struct PxRunPressing
+{
+	unsigned int	process_count ;
+	unsigned int	thread_count ;
+	char		run_command[ 256 + 1 ] ;
+} ;
 
 #endif
 

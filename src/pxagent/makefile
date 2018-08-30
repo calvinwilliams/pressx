@@ -9,16 +9,16 @@
 #@ c_FILE
 c_FILE		=	\
 			main.c \
-			manager.c \
+			agent.c \
 			comm.c \
 			app.c \
 
 ###### 目标文件、安装目录配置区
 include makeinstall
-BIN		=	pxmanager
+BIN		=	pxagent
 BININST		=	$(_BININST)
 HDER		= \
-			pxmanager_in.h \
+			pxagent_in.h \
 
 ###### 编译选项
 CFLAGS		=	$(_CFLAGS) \
@@ -48,6 +48,6 @@ PREMAKE		=
 include $(MKTPL2_HOME)/makeobj_$(MKTPL2_OS).inc
 
 ###### 目标文件依赖关系
-pxmanager		:	$(c_FILE_o)
+pxagent		:	$(c_FILE_o)
 	$(CC) -o $@ $(c_FILE_o) $(LFLAGS)
 

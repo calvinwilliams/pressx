@@ -9,6 +9,9 @@
 #@ c_FILE
 c_FILE		=	\
 			list.c \
+			string.c \
+			os.c \
+			socket.c \
 
 ###### 目标文件、安装目录配置区
 include makeinstall

@@ -11,38 +11,16 @@ int manager( struct PxManager *p_pxmanager )
 	
 	p_pxmanager->stdin_session.fd = fileno( stdin ) ;
 	
-	p_pxmanager->listen_session.netaddr.sock = socket( AF_INET , SOCK_STREAM , IPPROTO_TCP ) ;
-	if( p_pxmanager->listen_session.netaddr.sock == -1 )
-	{
-		printf( "socket failed , errno[%d]\n" , errno );
-		return -1;
-	}
-	
-	SETNETADDRESS( p_pxmanager->listen_session.netaddr )
-	nret = bind( p_pxmanager->listen_session.netaddr.sock , (struct sockaddr *) & (p_pxmanager->listen_session.netaddr.addr) , sizeof(struct sockaddr) ) ;
-	if( nret == -1 )
-	{
-		printf( "bind[%s:%d]#%d# failed , errno[%d]\n" , p_pxmanager->listen_session.netaddr.ip , p_pxmanager->listen_session.netaddr.port , p_pxmanager->listen_session.netaddr.sock , errno );
-		close( p_pxmanager->listen_session.netaddr.sock );
-		return -1;
-	}
-	
-	nret = listen( p_pxmanager->listen_session.netaddr.sock , 10240 ) ;
-	if( nret == -1 )
-	{
-		printf( "listen[%s:%d]#%d# failed , errno[%d]\n" , p_pxmanager->listen_session.netaddr.ip , p_pxmanager->listen_session.netaddr.port , p_pxmanager->listen_session.netaddr.sock , errno );
-		close( p_pxmanager->listen_session.netaddr.sock );
-		return -1;
-	}
-	else
-	{
-		printf( "listen[%s:%d]#%d# ok\n" , p_pxmanager->listen_session.netaddr.ip , p_pxmanager->listen_session.netaddr.port , p_pxmanager->listen_session.netaddr.sock );
-	}
+	nret = comm_CreateServerSocket( p_pxmanager ) ;
+	if( nret )
+		return nret;
 	
 	signal( SIGPIPE , SIG_IGN );
 	
 	while(1)
 	{
+		printf( "> " ); fflush(stdout);
+		
 		FD_ZERO( & read_fds );
 		FD_SET( p_pxmanager->stdin_session.fd , & read_fds );
 		FD_SET( p_pxmanager->listen_session.netaddr.sock , & read_fds );
@@ -63,28 +41,59 @@ int manager( struct PxManager *p_pxmanager )
 			}
 			
 			TrimEnter( stdin_command_buffer );
+			if( stdin_command_buffer[0] == '\0' )
+				continue;
 			
 			if( STRMINCMP( "quit" , == , stdin_command_buffer ) )
 			{
 				break;
 			}
-			if( STRMINCMP( "info" , == , stdin_command_buffer ) )
+			else if( STRMINCMP( "info" , == , stdin_command_buffer ) )
 			{
-				printf( "--- INFO ---------\n" );
-				printf( "listen ip : %s\n" , p_pxmanager->listen_session.netaddr.ip );
-				printf( "listen port : %d\n" , p_pxmanager->listen_session.netaddr.port );
-				printf( "process count : %u\n" , p_pxmanager->process_count );
-				printf( "thread count : %u\n" , p_pxmanager->thread_count );
-				
-				printf( "--- ACCEPTED SESSION ---------\n" );
-				list_for_each_entry( p_accepted_session , & (p_pxmanager->accepted_session_list) , struct AcceptedSession , listnode )
+				nret = app_ShowManagerInfo( p_pxmanager ) ;
+				if( nret )
 				{
-					printf( "ip : %s        port : %d\n" , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
+					printf( "app_ShowManagerInfo failed[%d]\n" , nret );
+					break;
+				}
+			}
+			else if( STRMINCMP( "sessions" , == , stdin_command_buffer ) )
+			{
+				nret = app_ShowCommSessions( p_pxmanager ) ;
+				if( nret )
+				{
+					printf( "app_ShowCommSessions failed[%d]\n" , nret );
+					break;
+				}
+			}
+			else if( STRMINCMP( "run" , == , stdin_command_buffer ) )
+			{
+				nret = app_RunPressing( p_pxmanager ) ;
+				if( nret )
+				{
+					printf( "app_RunPressing failed[%d]\n" , nret );
+					break;
 				}
 			}
 		}
 		if( FD_ISSET( p_pxmanager->listen_session.netaddr.sock , & read_fds ) )
 		{
+			struct AcceptedSession	*p_accepted_session = NULL ;
+			
+			nret = comm_AcceptClientSocket( p_pxmanager , & p_accepted_session ) ;
+			if( nret )
+			{
+				printf( "comm_AcceptClientSocket failed[%d]\n" , nret );
+				break;
+			}
+			
+			nret = app_RegisteAgent( p_pxmanager , p_accepted_session ) ;
+			if( nret )
+			{
+				printf( "app_RegisteAgent failed[%d]\n" , nret );
+				comm_CloseClientSocket( p_pxmanager , p_accepted_session );
+				continue;
+			}
 		}
 	}
 	

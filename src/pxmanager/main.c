@@ -8,6 +8,7 @@ static void usage()
 	printf( "USAGE : pxmanager --listen-ip (ip) --listen-port (port)\n" );
 	printf( "                  [ --process-count (count) ]\n" );
 	printf( "                  [ --thread-count (count) ]\n" );
+	printf( "                  [ --run-command (cmd) ]\n" );
 	return;
 }
 
@@ -52,6 +53,10 @@ int main( int argc , char *argv[] )
 		else if( strcmp( argv[i] , "--thread-count" ) == 0 && i + 1 < argc )
 		{
 			p_pxmanager->thread_count = atoi(argv[++i]) ;
+		}
+		else if( strcmp( argv[i] , "--run-command" ) == 0 && i + 1 < argc )
+		{
+			strncpy( p_pxmanager->run_command , argv[++i] , sizeof(p_pxmanager->run_command)-1 );
 		}
 		else
 		{

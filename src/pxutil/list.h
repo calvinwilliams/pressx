@@ -27,6 +27,10 @@ struct list_head {
 #define WRITE_ONCE(_var_,_val_)		(_var_) = (_val_)
 #define READ_ONCE(_var_)		(_var_)
 
+#ifndef container_of
+#define container_of(ptr, type, member) ((type *)( (char *)(ptr) - offsetof(type,member) ))
+#endif
+
 #define POISON_POINTER_DELTA 0
 #define LIST_POISON1  ((struct list_head *) 0x100 + POISON_POINTER_DELTA)
 #define LIST_POISON2  ((struct list_head *) 0x200 + POISON_POINTER_DELTA)
