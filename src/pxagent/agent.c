@@ -38,8 +38,8 @@ int agent( struct PxAgent *p_pxagent )
 		
 		if( FD_ISSET( p_pxagent->connected_session.netaddr.sock , & read_fds ) )
 		{
-			memset( & (p_pxagent->run_pressing) , 0x00 , sizeof(struct PxRunPressing) );
-			nret = readn( p_pxagent->connected_session.netaddr.sock , (char*)&(p_pxagent->run_pressing) , sizeof(struct PxRunPressing) , NULL ) ;
+			memset( & (p_pxagent->run_pressing) , 0x00 , sizeof(struct PxRunPressingMessage) );
+			nret = readn( p_pxagent->connected_session.netaddr.sock , (char*)&(p_pxagent->run_pressing) , sizeof(struct PxRunPressingMessage) , NULL ) ;
 			if( nret == 1 )
 			{
 				printf( "*** ERROR : readn failed[%d] , errno[%d]\n" , nret , errno );
@@ -48,7 +48,7 @@ int agent( struct PxAgent *p_pxagent )
 			}
 			
 			nret = app_CreateProcesses( p_pxagent ) ;
-			if( nret )
+			if( nret < 0 )
 			{
 				printf( "*** ERROR : app_CreateProcesses failed[%d]\n" , nret );
 				close( p_pxagent->connected_session.netaddr.sock ); p_pxagent->connected_session.netaddr.sock = -1 ;
