@@ -17,7 +17,7 @@ static void version()
 
 int main( int argc , char *argv[] )
 {
-	struct PxAgent		pxagent , *p_pxagent = & pxagent ;
+	struct PxAgent		_agent , *p_agent = & _agent ;
 	int			i ;
 	
 	if( argc == 1 )
@@ -26,7 +26,7 @@ int main( int argc , char *argv[] )
 		exit(0);
 	}
 	
-	memset( & pxagent , 0x00 , sizeof(struct PxAgent) );
+	memset( p_agent , 0x00 , sizeof(struct PxAgent) );
 	
 	for( i = 1 ; i < argc ; i++ )
 	{
@@ -37,11 +37,11 @@ int main( int argc , char *argv[] )
 		}
 		else if( strcmp( argv[i] , "--connect-ip" ) == 0 && i + 1 < argc )
 		{
-			strncpy( p_pxagent->connected_session.netaddr.ip , argv[++i] , sizeof(p_pxagent->connected_session.netaddr.ip)-1 );
+			strncpy( p_agent->connected_session.netaddr.ip , argv[++i] , sizeof(p_agent->connected_session.netaddr.ip)-1 );
 		}
 		else if( strcmp( argv[i] , "--connect-port" ) == 0 && i + 1 < argc )
 		{
-			p_pxagent->connected_session.netaddr.port = atoi(argv[++i]) ;
+			p_agent->connected_session.netaddr.port = atoi(argv[++i]) ;
 		}
 		else
 		{
@@ -51,13 +51,13 @@ int main( int argc , char *argv[] )
 		}
 	}
 	
-	if( p_pxagent->connected_session.netaddr.ip[0] == '\0' || p_pxagent->connected_session.netaddr.port <= 0 )
+	if( p_agent->connected_session.netaddr.ip[0] == '\0' || p_agent->connected_session.netaddr.port <= 0 )
 	{
 		printf( "*** ERROR : expect '--connect-ip' and '--connect-port'\n" );
 		usage();
 		exit(7);
 	}
 	
-	return -agent( p_pxagent ) ;
+	return -agent( p_agent ) ;
 }
 
