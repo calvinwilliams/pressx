@@ -21,7 +21,7 @@ include makeinstall
 BIN		=	pxagent
 BININST		=	$(_BININST)
 HDER		=	pxagent_api.h
-HDERINST	=	$(_HDERINST)/pressx_api
+HDERINST	=	$(_HDERINST)/pressx
 LIB		=	libpxagent_api.so
 LIBINST		=	$(_LIBINST)
 
@@ -34,6 +34,7 @@ LFLAGS		=	$(_LFLAGS) \
 			-L$(HOME)/lib \
 			-lpxutil \
 			-lpthread \
+			-ldl \
 
 ###### 额外宏定义区
 CLEAN_ADDITION	=

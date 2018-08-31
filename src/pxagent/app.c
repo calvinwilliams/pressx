@@ -11,9 +11,60 @@ int app_RegisteAgent( struct PxAgent *p_agent )
 	nret = writen( p_agent->connected_session.netaddr.sock , (char*)&msg , sizeof(struct PxRegisteMessage) , NULL ) ;
 	if( nret )
 	{
-		printf( "writen failed[%d] , errno[%d]\n" , nret , errno );
+		printf( "*** ERROR : writen failed[%d] , errno[%d]\n" , nret , errno );
 		return -1;
 	}
+	
+	return 0;
+}
+
+int app_LoadPlugin( struct PxAgent *p_agent )
+{
+	char			plugin_pathfilename[ 256 + 1 ] ;
+	
+	memset( plugin_pathfilename , 0x00 , sizeof(plugin_pathfilename) );
+	snprintf( plugin_pathfilename , sizeof(plugin_pathfilename)-1 , "%s/so/%s" , getenv("HOME") , p_agent->run_pressing.run_plugin );
+	p_agent->so_handler = dlopen( plugin_pathfilename , RTLD_LAZY ) ;
+	if( p_agent->so_handler == NULL )
+	{
+		printf( "*** ERROR : dlopen[%s] failed , errno[%d]\n" , plugin_pathfilename , errno );
+		return -1;
+	}
+	
+	p_agent->pfuncInitPxPlugin = (funcInitPxPlugin *)dlsym( p_agent->so_handler , "InitPxPlugin" ) ;
+	if( p_agent->pfuncInitPxPlugin == NULL )
+	{
+		printf( "*** ERROR : dlsym[%s][%s] failed , errno[%d]\n" , plugin_pathfilename , "InitPxPlugin" , errno );
+		return -1;
+	}
+	
+	p_agent->pfuncRunPxPlugin = (funcRunPxPlugin *)dlsym( p_agent->so_handler , "RunPxPlugin" ) ;
+	if( p_agent->pfuncRunPxPlugin == NULL )
+	{
+		printf( "*** ERROR : dlsym[%s][%s] failed , errno[%d]\n" , plugin_pathfilename , "RunPxPlugin" , errno );
+		return -1;
+	}
+	
+	p_agent->pfuncCleanPxPlugin = (funcCleanPxPlugin *)dlsym( p_agent->so_handler , "CleanPxPlugin" ) ;
+	if( p_agent->pfuncCleanPxPlugin == NULL )
+	{
+		printf( "*** ERROR : dlsym[%s][%s] failed , errno[%d]\n" , plugin_pathfilename , "CleanPxPlugin" , errno );
+		return -1;
+	}
+	
+	printf( "load plugin[%s] ok\n" , plugin_pathfilename );
+	
+	return 0;
+}
+
+int app_UnloadPlugin( struct PxAgent *p_agent )
+{
+	p_agent->pfuncInitPxPlugin = NULL ;
+	p_agent->pfuncRunPxPlugin = NULL ;
+	p_agent->pfuncCleanPxPlugin = NULL ;
+	
+	printf( "unload plugin ok\n" );
+	dlclose( p_agent->so_handler );
 	
 	return 0;
 }
@@ -162,16 +213,58 @@ int app_CreateThreads( struct PxAgent *p_agent , int process_index , struct PxPe
 
 void *app_ThreadEntry( void *p )
 {
-	struct PxPluginContext		*p_pxplugin_ctx = (struct PxPluginContext *)p ;
+	struct PxPluginContext	*p_pxplugin_ctx = (struct PxPluginContext *)p ;
+	unsigned int		run_count ;
+	unsigned int		run_index ;
+	struct timeval		tv1 , tv2 , tv3 , tv4 , tv_diff ;
 	
-	sleep(1);
+	int			nret = 0 ;
 	
-p_pxplugin_ctx->perf_stat->min_run_elapse.tv_sec = 1 ;
-p_pxplugin_ctx->perf_stat->min_run_elapse.tv_usec = 0 ;
-p_pxplugin_ctx->perf_stat->avg_run_elapse.tv_sec = 1 ;
-p_pxplugin_ctx->perf_stat->avg_run_elapse.tv_usec = 0 ;
-p_pxplugin_ctx->perf_stat->max_run_elapse.tv_sec = 1 ;
-p_pxplugin_ctx->perf_stat->max_run_elapse.tv_usec = 0 ;
+	nret = p_pxplugin_ctx->p_agent->pfuncInitPxPlugin( p_pxplugin_ctx ) ;
+	if( nret )
+	{
+		printf( "pfuncInitPxPlugin failed[%d]\n" , nret );
+		return NULL;
+	}
+	
+	gettimeofday( & tv1 , NULL );
+	
+	run_count = p_pxplugin_ctx->p_agent->run_pressing.run_count ;
+	for( run_index = 0 ; run_index < run_count ; run_index++ )
+	{
+		gettimeofday( & tv2 , NULL );
+		
+		nret = p_pxplugin_ctx->p_agent->pfuncRunPxPlugin( p_pxplugin_ctx ) ;
+		if( nret )
+		{
+			printf( "pfuncRunPxPlugin failed[%d]\n" , nret );
+			return NULL;
+		}
+		
+		gettimeofday( & tv3 , NULL );
+		DIFF_TIMEVAL( tv_diff , tv2 , tv3 )
+		if( run_index == 0 )
+		{
+			VAL_TIMEVAL( p_pxplugin_ctx->perf_stat->min_run_elapse , tv_diff )
+			VAL_TIMEVAL( p_pxplugin_ctx->perf_stat->max_run_elapse , tv_diff )
+		}
+		else
+		{
+			MIN_VAL_TIMEVAL( p_pxplugin_ctx->perf_stat->min_run_elapse , tv_diff )
+			MAX_VAL_TIMEVAL( p_pxplugin_ctx->perf_stat->max_run_elapse , tv_diff )
+		}
+	}
+	
+	gettimeofday( & tv4 , NULL );
+	DIFF_TIMEVAL( p_pxplugin_ctx->perf_stat->total_run_elapse , tv1 , tv4 )
+	
+	nret = p_pxplugin_ctx->p_agent->pfuncCleanPxPlugin( p_pxplugin_ctx ) ;
+	if( nret )
+	{
+		printf( "pfuncCleanPxPlugin failed[%d]\n" , nret );
+		return NULL;
+	}
+	
 	return NULL;
 }
 

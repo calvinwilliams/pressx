@@ -26,7 +26,8 @@ struct PxManager
 	unsigned int		process_count ;
 	unsigned int		thread_count ;
 	unsigned int		run_count ;
-	char			run_command[ PRESSX_MAXLEN_RUN_COMMAND + 1 ] ;
+	char			run_plugin[ PRESSX_MAXLEN_RUN_PLUGIN + 1 ] ;
+	char			run_parameter[ PRESSX_MAXLEN_RUN_PARAMETER + 1 ] ;
 	
 	struct PxListenSession	listen_session ;
 	struct PxStdinSession	stdin_session ;

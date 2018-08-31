@@ -4,6 +4,8 @@
 #include <errno.h>
 #include <sys/time.h>
 
+#include "pxutil.h"
+
 struct PxPluginContext ;
 
 typedef int funcInitPxPlugin( struct PxPluginContext *p_pxplugin_ctx );
@@ -14,11 +16,7 @@ void SetPxPluginUserData( struct PxPluginContext *p_pxplugin_ctx , void *user_da
 void *GetPxPluginUserData( struct PxPluginContext *p_pxplugin_ctx );
 
 unsigned int GetPxPluginRunCount( struct PxPluginContext *p_pxplugin_ctx );
-char *GetPxPluginRunCommandPtr( struct PxPluginContext *p_pxplugin_ctx );
-
-void SetPxPluginMinRunElapse( struct PxPluginContext *p_pxplugin_ctx , struct timeval min_run_elapse );
-void SetPxPluginAvgRunElapse( struct PxPluginContext *p_pxplugin_ctx , struct timeval avg_run_elapse );
-void SetPxPluginMaxRunElapse( struct PxPluginContext *p_pxplugin_ctx , struct timeval max_run_elapse );
+char *GetPxPluginRunParameterPtr( struct PxPluginContext *p_pxplugin_ctx );
 
 #endif
 
