@@ -42,9 +42,23 @@ int agent( struct PxAgent *p_pxagent )
 			nret = readn( p_pxagent->connected_session.netaddr.sock , (char*)&(p_pxagent->run_pressing) , sizeof(struct PxRunPressingMessage) , NULL ) ;
 			if( nret == 1 )
 			{
+				printf( "*** ERROR : server closed on readn\n" );
+				close( p_pxagent->connected_session.netaddr.sock ); p_pxagent->connected_session.netaddr.sock = -1 ;
+				break;
+			}
+			else if( nret < 0 )
+			{
 				printf( "*** ERROR : readn failed[%d] , errno[%d]\n" , nret , errno );
 				close( p_pxagent->connected_session.netaddr.sock ); p_pxagent->connected_session.netaddr.sock = -1 ;
-				continue;
+				return -1;
+			}
+			
+			nret = app_LoadPlugin( p_pxagent ) ;
+			if( nret < 0 )
+			{
+				printf( "*** ERROR : app_LoadPlugin failed[%d]\n" , nret );
+				close( p_pxagent->connected_session.netaddr.sock ); p_pxagent->connected_session.netaddr.sock = -1 ;
+				return -1;
 			}
 			
 			nret = app_CreateProcesses( p_pxagent ) ;
@@ -52,7 +66,7 @@ int agent( struct PxAgent *p_pxagent )
 			{
 				printf( "*** ERROR : app_CreateProcesses failed[%d]\n" , nret );
 				close( p_pxagent->connected_session.netaddr.sock ); p_pxagent->connected_session.netaddr.sock = -1 ;
-				continue;
+				return -1;
 			}
 		}
 	}

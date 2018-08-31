@@ -17,7 +17,7 @@ LIBINST		=	$(HOME)/so
 
 ###### ±‡“Î—°œÓ
 CFLAGS		=	$(_CFLAGS) \
-			-I$(HOME)/include/pressx_api \
+			-I$(HOME)/include/pressx \
 			-I$(HOME)/include/ib2util \
 			-I$(HOME)/include/ib2ssd \
 			-I$(HOME)/include/ib2fmd \

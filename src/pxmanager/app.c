@@ -55,10 +55,10 @@ int app_RunPressing( struct PxManager *p_manager )
 	unsigned int				process_thread_idex ;
 	unsigned int				process_thread_count ;
 	unsigned int				total_run_count ;
-	double					total_avg_run_elapse ;
-	double					avg_run_elapse ;
+	double					total_run_elapse ;
 	struct timeval				min_run_elapse ;
 	struct timeval				max_run_elapse ;
+	double					run_elapse ;
 	
 	int					nret = 0 ;
 	
@@ -69,7 +69,8 @@ int app_RunPressing( struct PxManager *p_manager )
 		run_pressing.process_count = p_manager->process_count ;
 		run_pressing.thread_count = p_manager->thread_count ;
 		run_pressing.run_count = p_manager->run_count ;
-		strncpy( run_pressing.run_command , p_manager->run_command , sizeof(run_pressing.run_command)-1 );
+		strncpy( run_pressing.run_plugin , p_manager->run_plugin , sizeof(run_pressing.run_plugin)-1 );
+		strncpy( run_pressing.run_parameter , p_manager->run_parameter , sizeof(run_pressing.run_parameter)-1 );
 		nret = writen( p_accepted_session->netaddr.sock , (char*)&run_pressing , sizeof(struct PxRunPressingMessage) , NULL ) ;
 		if( nret )
 		{
@@ -83,7 +84,7 @@ int app_RunPressing( struct PxManager *p_manager )
 	
 	process_thread_count = p_manager->process_count * p_manager->thread_count ;
 	total_run_count = 0 ;
-	total_avg_run_elapse = 0.00 ;
+	total_run_elapse = 0.00 ;
 	min_run_elapse.tv_sec = LONG_MAX ;
 	min_run_elapse.tv_usec = LONG_MAX ;
 	max_run_elapse.tv_sec = LONG_MIN ;
@@ -103,24 +104,23 @@ int app_RunPressing( struct PxManager *p_manager )
 				return -1;
 			}
 			
-			printf( "run_count[%u] min_run_elapse[%ld.%06ld] avg_run_elapse[%ld.%06ld] max_run_elapse[%ld.%06ld]\n" , p_manager->run_count , perf_stat.min_run_elapse.tv_sec,perf_stat.min_run_elapse.tv_usec , perf_stat.avg_run_elapse.tv_sec,perf_stat.avg_run_elapse.tv_usec , perf_stat.max_run_elapse.tv_sec,perf_stat.max_run_elapse.tv_usec );
+			printf( "run_count[%u] total_run_elapse[%ld.%06ld] min_run_elapse[%ld.%06ld] max_run_elapse[%ld.%06ld]\n" , p_manager->run_count , perf_stat.total_run_elapse.tv_sec,perf_stat.total_run_elapse.tv_usec , perf_stat.min_run_elapse.tv_sec,perf_stat.min_run_elapse.tv_usec , perf_stat.max_run_elapse.tv_sec,perf_stat.max_run_elapse.tv_usec );
 			
 			total_run_count += p_manager->run_count ;
-			total_avg_run_elapse += (double)(perf_stat.avg_run_elapse.tv_sec) + ((double)(perf_stat.avg_run_elapse.tv_usec))/1000000 ;
+			total_run_elapse += (double)(perf_stat.total_run_elapse.tv_sec) + ((double)(perf_stat.total_run_elapse.tv_usec))/1000000 ;
 			MIN_VAL_TIMEVAL( min_run_elapse , perf_stat.min_run_elapse )
 			MAX_VAL_TIMEVAL( max_run_elapse , perf_stat.max_run_elapse )
 		}
 	}
-	avg_run_elapse = total_avg_run_elapse / host_count ;
+	run_elapse = total_run_elapse / host_count ;
 	
 	printf( "all process and thread finished\n" );
 	printf( "--------- PERFORMANCE REPORT ---------\n" );
-	printf( "           total run_count : %u\n" , total_run_count );
+	printf( "           total run count : %u\n" , total_run_count );
 	printf( "                min elapse : %ld.%06ld\n" , min_run_elapse.tv_sec , min_run_elapse.tv_usec );
-	printf( "                avg elapse : %.6lf\n" , avg_run_elapse );
 	printf( "                max elapse : %ld.%06ld\n" , max_run_elapse.tv_sec , max_run_elapse.tv_usec );
-	printf( "   transactions per second : %.0lf\n" , (double)total_run_count / avg_run_elapse );
-	printf( "avg delay per transaction : %.6lf\n" , avg_run_elapse / (double)total_run_count );
+	printf( "   transactions per second : %.0lf\n" , (double)total_run_count / run_elapse );
+	printf( "avg delay per transaction : %.6lf\n" , run_elapse / (double)total_run_count );
 	
 	return 0;
 }

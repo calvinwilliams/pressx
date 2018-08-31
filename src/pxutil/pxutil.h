@@ -16,6 +16,7 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <values.h>
+#include <dlfcn.h>
 
 #include "list.h"
 
@@ -58,6 +59,10 @@
 #define STRMINCMP(_str_,_C_,_substr_)	( strncmp(_str_,_substr_,strlen(_substr_)) _C_ 0 )
 #endif
 
+#define VAL_TIMEVAL(_tv1_,_tv2_) \
+	(_tv1_).tv_sec = (_tv2_).tv_sec ; \
+	(_tv1_).tv_usec = (_tv2_).tv_usec ; \
+
 #define MIN_VAL_TIMEVAL(_tv1_,_tv2_) \
 	if( (_tv2_).tv_sec < (_tv1_).tv_sec ) \
 	{ \
@@ -80,6 +85,15 @@
 	{ \
 		(_tv1_).tv_sec = (_tv2_).tv_sec ; \
 		(_tv1_).tv_usec = (_tv2_).tv_usec ; \
+	} \
+
+#define DIFF_TIMEVAL(_tv_diff_,_tv1_,_tv2_) \
+	(_tv_diff_).tv_sec = (_tv2_).tv_sec - (_tv1_).tv_sec ; \
+	(_tv_diff_).tv_usec = (_tv2_).tv_usec - (_tv1_).tv_usec ; \
+	while( (_tv_diff_).tv_usec < 0 ) \
+	{ \
+		(_tv_diff_).tv_usec += 1000000 ; \
+		(_tv_diff_).tv_sec--; \
 	} \
 
 struct NetAddress
@@ -152,20 +166,22 @@ struct PxRegisteMessage
 	char		user_name[ PRESSX_MAXLEN_USER_NAME + 1 ] ;
 } ;
 
-#define PRESSX_MAXLEN_RUN_COMMAND	256
+#define PRESSX_MAXLEN_RUN_PLUGIN	256
+#define PRESSX_MAXLEN_RUN_PARAMETER	256
 
 struct PxRunPressingMessage
 {
 	unsigned int	process_count ;
 	unsigned int	thread_count ;
 	unsigned int	run_count ;
-	char		run_command[ PRESSX_MAXLEN_RUN_COMMAND + 1 ] ;
+	char		run_plugin[ PRESSX_MAXLEN_RUN_PLUGIN + 1 ] ;
+	char		run_parameter[ PRESSX_MAXLEN_RUN_PARAMETER + 1 ] ;
 } ;
 
 struct PxPerformanceStatMessage
 {
+	struct timeval	total_run_elapse ;
 	struct timeval	min_run_elapse ;
-	struct timeval	avg_run_elapse ;
 	struct timeval	max_run_elapse ;
 } ;
 

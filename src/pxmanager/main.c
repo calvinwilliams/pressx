@@ -59,9 +59,13 @@ int main( int argc , char *argv[] )
 		{
 			p_manager->run_count = atoi(argv[++i]) ;
 		}
-		else if( strcmp( argv[i] , "--run-command" ) == 0 && i + 1 < argc )
+		else if( strcmp( argv[i] , "--run-plugin" ) == 0 && i + 1 < argc )
 		{
-			strncpy( p_manager->run_command , argv[++i] , sizeof(p_manager->run_command)-1 );
+			strncpy( p_manager->run_plugin , argv[++i] , sizeof(p_manager->run_plugin)-1 );
+		}
+		else if( strcmp( argv[i] , "--run-parameter" ) == 0 && i + 1 < argc )
+		{
+			strncpy( p_manager->run_parameter , argv[++i] , sizeof(p_manager->run_parameter)-1 );
 		}
 		else
 		{
