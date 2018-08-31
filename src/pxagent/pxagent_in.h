@@ -5,32 +5,33 @@
 
 #include "pthread.h"
 
-struct ConnectedSession
+struct PxConnectedSession
 {
-	struct NetAddress	netaddr ;
+	struct NetAddress		netaddr ;
 } ;
 
-struct PxSomainParameter
+struct PxPluginContext
 {
-	struct PxAgent			*p_pxagent ;
-	struct PxPerformanceStatMessage	*perf_stat_base ;
+	struct PxAgent			*p_agent ;
+	struct PxPerformanceStatMessage	*perf_stat ;
+	void				*user_data ;
 } ;
 
 struct PxAgent
 {
-	struct ConnectedSession		connected_session ;
+	struct PxConnectedSession	connected_session ;
 	
 	struct PxRunPressingMessage	run_pressing ;
 	struct PxPerformanceStatMessage	*perf_stat_base ;
 } ;
 
-int agent( struct PxAgent *p_pxagent );
+int agent( struct PxAgent *p_agent );
 
-int comm_CreateClientSocket( struct PxAgent *p_pxagent );
+int comm_CreateClientSocket( struct PxAgent *p_agent );
 
-int app_RegisteAgent( struct PxAgent *p_pxagent );
-int app_CreateProcesses( struct PxAgent *p_pxagent );
-int app_CreateThreads( struct PxAgent *p_pxagent , int process_index , struct PxPerformanceStatMessage *perf_stat_base_in_this_process );
+int app_RegisteAgent( struct PxAgent *p_agent );
+int app_CreateProcesses( struct PxAgent *p_agent );
+int app_CreateThreads( struct PxAgent *p_agent , int process_index , struct PxPerformanceStatMessage *perf_stat_base_in_this_process );
 void *app_ThreadEntry( void *p );
 
 #endif

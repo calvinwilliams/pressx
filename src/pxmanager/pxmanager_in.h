@@ -3,20 +3,20 @@
 
 #include "pxutil.h"
 
-struct ListenSession
+struct PxListenSession
 {
 	struct NetAddress	netaddr ;
 } ;
 
-struct StdinSession
+struct PxStdinSession
 {
 	int			fd ;
 } ;
 
-struct AcceptedSession
+struct PxAcceptedSession
 {
 	struct NetAddress	netaddr ;
-	char			user_name[ MAXLEN_USER_NAME + 1 ] ;
+	char			user_name[ PRESSX_MAXLEN_USER_NAME + 1 ] ;
 	
 	struct list_head	listnode ;
 } ;
@@ -25,24 +25,25 @@ struct PxManager
 {
 	unsigned int		process_count ;
 	unsigned int		thread_count ;
-	char			run_command[ 256 + 1 ] ;
+	unsigned int		run_count ;
+	char			run_command[ PRESSX_MAXLEN_RUN_COMMAND + 1 ] ;
 	
-	struct ListenSession	listen_session ;
-	struct StdinSession	stdin_session ;
+	struct PxListenSession	listen_session ;
+	struct PxStdinSession	stdin_session ;
 	
 	struct list_head	accepted_session_list ;
 } ;
 
-int manager( struct PxManager *p_pxmanager );
+int manager( struct PxManager *p_manager );
 
-int comm_CreateServerSocket( struct PxManager *p_pxmanager );
-int comm_AcceptClientSocket( struct PxManager *p_pxmanager , struct AcceptedSession **pp_accepted_session );
-int comm_CloseClientSocket( struct PxManager *p_pxmanager , struct AcceptedSession *p_accepted_session );
+int comm_CreateServerSocket( struct PxManager *p_manager );
+int comm_AcceptClientSocket( struct PxManager *p_manager , struct PxAcceptedSession **pp_accepted_session );
+int comm_CloseClientSocket( struct PxManager *p_manager , struct PxAcceptedSession *p_accepted_session );
 
-int app_ShowManagerInfo( struct PxManager *p_pxmanager );
-int app_ShowCommSessions( struct PxManager *p_pxmanager );
-int app_RegisteAgent( struct PxManager *p_pxmanager , struct AcceptedSession *p_accepted_session );
-int app_RunPressing( struct PxManager *p_pxmanager );
+int app_ShowManagerInfo( struct PxManager *p_manager );
+int app_ShowCommSessions( struct PxManager *p_manager );
+int app_RegisteAgent( struct PxManager *p_manager , struct PxAcceptedSession *p_accepted_session );
+int app_RunPressing( struct PxManager *p_manager );
 
 #endif
 

@@ -1,20 +1,20 @@
 #include "pxmanager_in.h"
 
-int app_ShowManagerInfo( struct PxManager *p_pxmanager )
+int app_ShowManagerInfo( struct PxManager *p_manager )
 {
-	printf( "listen ip : %s\n" , p_pxmanager->listen_session.netaddr.ip );
-	printf( "listen port : %d\n" , p_pxmanager->listen_session.netaddr.port );
-	printf( "process count : %u\n" , p_pxmanager->process_count );
-	printf( "thread count : %u\n" , p_pxmanager->thread_count );
+	printf( "listen ip : %s\n" , p_manager->listen_session.netaddr.ip );
+	printf( "listen port : %d\n" , p_manager->listen_session.netaddr.port );
+	printf( "process count : %u\n" , p_manager->process_count );
+	printf( "thread count : %u\n" , p_manager->thread_count );
 	
 	return 0;
 }
 
-int app_ShowCommSessions( struct PxManager *p_pxmanager )
+int app_ShowCommSessions( struct PxManager *p_manager )
 {
-	struct AcceptedSession	*p_accepted_session = NULL ;
+	struct PxAcceptedSession	*p_accepted_session = NULL ;
 	
-	list_for_each_entry( p_accepted_session , & (p_pxmanager->accepted_session_list) , struct AcceptedSession , listnode )
+	list_for_each_entry( p_accepted_session , & (p_manager->accepted_session_list) , struct PxAcceptedSession , listnode )
 	{
 		printf( "%s:%d\n" , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
 	}
@@ -22,7 +22,7 @@ int app_ShowCommSessions( struct PxManager *p_pxmanager )
 	return 0;
 }
 
-int app_RegisteAgent( struct PxManager *p_pxmanager , struct AcceptedSession *p_accepted_session )
+int app_RegisteAgent( struct PxManager *p_manager , struct PxAcceptedSession *p_accepted_session )
 {
 	struct PxRegisteMessage		msg ;
 	
@@ -46,23 +46,30 @@ int app_RegisteAgent( struct PxManager *p_pxmanager , struct AcceptedSession *p_
 	return 0;
 }
 
-int app_RunPressing( struct PxManager *p_pxmanager )
+int app_RunPressing( struct PxManager *p_manager )
 {
-	struct AcceptedSession		*p_accepted_session = NULL ;
-	struct PxRunPressingMessage	run_pressing ;
-	struct PxPerformanceStatMessage	perf_stat ;
-	unsigned int			i ;
-	unsigned int			count ;
-	double				total_elapse ;
+	struct PxAcceptedSession		*p_accepted_session = NULL ;
+	int					host_count ;
+	struct PxRunPressingMessage		run_pressing ;
+	struct PxPerformanceStatMessage		perf_stat ;
+	unsigned int				process_thread_idex ;
+	unsigned int				process_thread_count ;
+	unsigned int				total_run_count ;
+	double					total_avg_run_elapse ;
+	double					avg_run_elapse ;
+	struct timeval				min_run_elapse ;
+	struct timeval				max_run_elapse ;
 	
-	int				nret = 0 ;
+	int					nret = 0 ;
 	
-	list_for_each_entry( p_accepted_session , & (p_pxmanager->accepted_session_list) , struct AcceptedSession , listnode )
+	host_count = 0 ;
+	list_for_each_entry( p_accepted_session , & (p_manager->accepted_session_list) , struct PxAcceptedSession , listnode )
 	{
 		memset( & run_pressing , 0x00 , sizeof(struct PxRunPressingMessage) );
-		run_pressing.process_count = p_pxmanager->process_count ;
-		run_pressing.thread_count = p_pxmanager->thread_count ;
-		strncpy( run_pressing.run_command , p_pxmanager->run_command , sizeof(run_pressing.run_command)-1 );
+		run_pressing.process_count = p_manager->process_count ;
+		run_pressing.thread_count = p_manager->thread_count ;
+		run_pressing.run_count = p_manager->run_count ;
+		strncpy( run_pressing.run_command , p_manager->run_command , sizeof(run_pressing.run_command)-1 );
 		nret = writen( p_accepted_session->netaddr.sock , (char*)&run_pressing , sizeof(struct PxRunPressingMessage) , NULL ) ;
 		if( nret )
 		{
@@ -71,16 +78,22 @@ int app_RunPressing( struct PxManager *p_pxmanager )
 		}
 		
 		printf( "%s:%d run pressing ...\n" , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
+		host_count++;
 	}
 	
-	count = p_pxmanager->process_count * p_pxmanager->thread_count ;
-	total_elapse = 0.00 ;
+	process_thread_count = p_manager->process_count * p_manager->thread_count ;
+	total_run_count = 0 ;
+	total_avg_run_elapse = 0.00 ;
+	min_run_elapse.tv_sec = LONG_MAX ;
+	min_run_elapse.tv_usec = LONG_MAX ;
+	max_run_elapse.tv_sec = LONG_MIN ;
+	max_run_elapse.tv_usec = LONG_MIN ;
 	
-	list_for_each_entry( p_accepted_session , & (p_pxmanager->accepted_session_list) , struct AcceptedSession , listnode )
+	list_for_each_entry( p_accepted_session , & (p_manager->accepted_session_list) , struct PxAcceptedSession , listnode )
 	{
-		printf( "waiting %s:%d finishing ...\n" , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
+		printf( "waiting %s:%d finishing ... " , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
 		
-		for( i = 0 ; i < count ; i++ )
+		for( process_thread_idex = 0 ; process_thread_idex < process_thread_count ; process_thread_idex++ )
 		{
 			memset( & perf_stat , 0x00 , sizeof(struct PxPerformanceStatMessage) );
 			nret = readn( p_accepted_session->netaddr.sock , (void*)&perf_stat , sizeof(struct PxPerformanceStatMessage) , NULL ) ;
@@ -90,16 +103,24 @@ int app_RunPressing( struct PxManager *p_pxmanager )
 				return -1;
 			}
 			
-			printf( "total_elapse[%ld.%06ld]\n" , perf_stat.total_elapse.tv_sec , perf_stat.total_elapse.tv_usec );
+			printf( "run_count[%u] min_run_elapse[%ld.%06ld] avg_run_elapse[%ld.%06ld] max_run_elapse[%ld.%06ld]\n" , p_manager->run_count , perf_stat.min_run_elapse.tv_sec,perf_stat.min_run_elapse.tv_usec , perf_stat.avg_run_elapse.tv_sec,perf_stat.avg_run_elapse.tv_usec , perf_stat.max_run_elapse.tv_sec,perf_stat.max_run_elapse.tv_usec );
 			
-			total_elapse += perf_stat.total_elapse.tv_sec + (double)(perf_stat.total_elapse.tv_usec)/1000000 ;
+			total_run_count += p_manager->run_count ;
+			total_avg_run_elapse += (double)(perf_stat.avg_run_elapse.tv_sec) + ((double)(perf_stat.avg_run_elapse.tv_usec))/1000000 ;
+			MIN_VAL_TIMEVAL( min_run_elapse , perf_stat.min_run_elapse )
+			MAX_VAL_TIMEVAL( max_run_elapse , perf_stat.max_run_elapse )
 		}
 	}
+	avg_run_elapse = total_avg_run_elapse / host_count ;
 	
 	printf( "all process and thread finished\n" );
-	printf( "          total_elapse[%.2lf]\n" , total_elapse );
-	printf( "transaction per secons[%.0lf]\n" , count / total_elapse );
-	printf( "  delay of transaction[%.6lf]\n" , total_elapse / count );
+	printf( "--------- PERFORMANCE REPORT ---------\n" );
+	printf( "           total run_count : %u\n" , total_run_count );
+	printf( "                min elapse : %ld.%06ld\n" , min_run_elapse.tv_sec , min_run_elapse.tv_usec );
+	printf( "                avg elapse : %.6lf\n" , avg_run_elapse );
+	printf( "                max elapse : %ld.%06ld\n" , max_run_elapse.tv_sec , max_run_elapse.tv_usec );
+	printf( "   transactions per second : %.0lf\n" , (double)total_run_count / avg_run_elapse );
+	printf( "avg delay per transaction : %.6lf\n" , avg_run_elapse / (double)total_run_count );
 	
 	return 0;
 }

@@ -7,8 +7,7 @@
 
 ###### 子目录配置区
 DIROBJS		= \
-			src \
-			src-plugins \
+			pxplugin-ib2 \
 
 ###### 加载mktpl模板库
 #@ FILESYSTEM

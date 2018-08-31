@@ -15,6 +15,7 @@
 #include <pwd.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
+#include <values.h>
 
 #include "list.h"
 
@@ -56,6 +57,30 @@
 #ifndef STRMINCMP
 #define STRMINCMP(_str_,_C_,_substr_)	( strncmp(_str_,_substr_,strlen(_substr_)) _C_ 0 )
 #endif
+
+#define MIN_VAL_TIMEVAL(_tv1_,_tv2_) \
+	if( (_tv2_).tv_sec < (_tv1_).tv_sec ) \
+	{ \
+		(_tv1_).tv_sec = (_tv2_).tv_sec ; \
+		(_tv1_).tv_usec = (_tv2_).tv_usec ; \
+	} \
+	else if( (_tv2_).tv_sec == (_tv1_).tv_sec && (_tv2_).tv_usec < (_tv1_).tv_usec ) \
+	{ \
+		(_tv1_).tv_sec = (_tv2_).tv_sec ; \
+		(_tv1_).tv_usec = (_tv2_).tv_usec ; \
+	} \
+
+#define MAX_VAL_TIMEVAL(_tv1_,_tv2_) \
+	if( (_tv2_).tv_sec > (_tv1_).tv_sec ) \
+	{ \
+		(_tv1_).tv_sec = (_tv2_).tv_sec ; \
+		(_tv1_).tv_usec = (_tv2_).tv_usec ; \
+	} \
+	else if( (_tv2_).tv_sec == (_tv1_).tv_sec && (_tv2_).tv_usec > (_tv1_).tv_usec ) \
+	{ \
+		(_tv1_).tv_sec = (_tv2_).tv_sec ; \
+		(_tv1_).tv_usec = (_tv2_).tv_usec ; \
+	} \
 
 struct NetAddress
 {
@@ -110,7 +135,7 @@ struct NetAddress
 	} \
 	}
 
-#define BLANK_DELIM	" \t\f\r\n"
+#define PRESSX_BLANK_DELIM		" \t\f\r\n"
 
 char *gettok( char *str , const char *delim );
 char *TrimEnter( char *str );
@@ -120,24 +145,28 @@ char *GetUsernamePtr();
 int writen( int sock , char *send_buffer , int send_len , int *p_sent_len );
 int readn( int sock , char *recv_buffer , int recv_len , int *p_received_len );
 
-#define MAXLEN_USER_NAME	64
+#define PRESSX_MAXLEN_USER_NAME		64
 
 struct PxRegisteMessage
 {
-	char		user_name[ MAXLEN_USER_NAME + 1 ] ;
+	char		user_name[ PRESSX_MAXLEN_USER_NAME + 1 ] ;
 } ;
+
+#define PRESSX_MAXLEN_RUN_COMMAND	256
 
 struct PxRunPressingMessage
 {
 	unsigned int	process_count ;
 	unsigned int	thread_count ;
-	char		run_command[ 256 + 1 ] ;
+	unsigned int	run_count ;
+	char		run_command[ PRESSX_MAXLEN_RUN_COMMAND + 1 ] ;
 } ;
 
 struct PxPerformanceStatMessage
 {
-	unsigned int	request_count ;
-	struct timeval	total_elapse ;
+	struct timeval	min_run_elapse ;
+	struct timeval	avg_run_elapse ;
+	struct timeval	max_run_elapse ;
 } ;
 
 #endif
