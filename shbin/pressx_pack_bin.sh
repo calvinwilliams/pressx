@@ -6,7 +6,7 @@ BINFILES="	bin/pxmanager
 "
 
 LIBFILES="	lib/libpxutil.so
-		lib/libagent_api.so
+		lib/libpxagent_api.so
 "
 
 PLUGINFILES="	so/pxplugin-*.so
