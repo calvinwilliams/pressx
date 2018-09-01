@@ -11,6 +11,11 @@ int comm_CreateServerSocket( struct PxManager *p_manager )
 		return -1;
 	}
 	
+	{
+		int	onoff = 1 ;
+		setsockopt( p_manager->listen_session.netaddr.sock , SOL_SOCKET , SO_REUSEADDR , (void *) & onoff , sizeof(int) );
+	}
+	
 	SETNETADDRESS( p_manager->listen_session.netaddr )
 	nret = bind( p_manager->listen_session.netaddr.sock , (struct sockaddr *) & (p_manager->listen_session.netaddr.addr) , sizeof(struct sockaddr) ) ;
 	if( nret == -1 )

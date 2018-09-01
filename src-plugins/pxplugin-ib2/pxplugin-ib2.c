@@ -26,6 +26,7 @@ funcInitPxPlugin InitPxPlugin ;
 int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 {
 	struct PxPluginUserData	*user_data = NULL ;
+	char			*p = NULL ;
 	char			file_filename[ IB2_MAXLEN_FILENAME + 1 ] ;
 	char			file_pathfilename[ IB2_MAXLEN_FILENAME + 1 ] ;
 	FILE			*fp = NULL ;
@@ -41,6 +42,9 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	}
 	memset( user_data , 0x00 , sizeof(struct PxPluginUserData) );
 	
+	hzb_log_init();
+	hzb_log_set_category( "press" );
+	
 	nret = IB2AllocEnvironment( & (user_data->ib2_env) ) ;
 	if( nret )
 	{
@@ -55,24 +59,42 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 		return -1;
 	}
 	
-	user_data->node = gettok( GetPxPluginRunParameterPtr(p_pxplugin_ctx) , PRESSX_BLANK_DELIM ) ;
-	if( user_data->node == NULL )
+	p = gettok( GetPxPluginRunParameterPtr(p_pxplugin_ctx) , PRESSX_BLANK_DELIM ) ;
+	if( p == NULL )
 	{
 		printf( "pxplugin-ib2 | expect 'node' in run parameter\n" );
 		return -1;
 	}
+	user_data->node = strdup(p) ;
+	if( user_data->node == NULL )
+	{
+		printf( "pxplugin-ib2 | strdup failed , errno[%d]\n" , errno );
+		return -1;
+	}
 	
-	user_data->app = gettok( NULL , PRESSX_BLANK_DELIM ) ;
-	if( user_data->app == NULL )
+	p = gettok( NULL , PRESSX_BLANK_DELIM ) ;
+	if( p == NULL )
 	{
 		printf( "pxplugin-ib2 | expect 'app' in run command\n" );
 		return -1;
 	}
+	user_data->app = strdup(p) ;
+	if( user_data->app == NULL )
+	{
+		printf( "pxplugin-ib2 | strdup failed , errno[%d]\n" , errno );
+		return -1;
+	}
 	
-	user_data->msg_pathfilename = gettok( NULL , PRESSX_BLANK_DELIM ) ;
-	if( user_data->msg_pathfilename == NULL )
+	p = gettok( NULL , PRESSX_BLANK_DELIM ) ;
+	if( p == NULL )
 	{
 		printf( "pxplugin-ib2 | expect 'msg_pathfilename' in run command\n" );
+		return -1;
+	}
+	user_data->msg_pathfilename = strdup(p) ;
+	if( user_data->msg_pathfilename == NULL )
+	{
+		printf( "pxplugin-ib2 | strdup failed , errno[%d]\n" , errno );
 		return -1;
 	}
 	
@@ -98,56 +120,62 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	printf( "pxplugin-ib2 | load msg tpl file[%s] ok , len[%d]\n" , user_data->msg_pathfilename , user_data->msg_tpl_len );
 	
 	user_data->file_pathfilename = gettok( NULL , PRESSX_BLANK_DELIM ) ;
-	memset( file_filename , 0x00 , sizeof(file_filename) );
-	memset( file_pathfilename , 0x00 , sizeof(file_pathfilename) );
-	fp = IB2CreateTempFile( file_filename , file_pathfilename , "w" ) ;
-	if( fp == NULL )
+	if( user_data->file_pathfilename )
 	{
-		printf( "pxplugin-ib2 | IB2CreateTempFile failed , errno[%d]\n" , errno );
-		return -1;
+		memset( file_filename , 0x00 , sizeof(file_filename) );
+		memset( file_pathfilename , 0x00 , sizeof(file_pathfilename) );
+		fp = IB2CreateTempFile( file_filename , file_pathfilename , "w" ) ;
+		if( fp == NULL )
+		{
+			printf( "pxplugin-ib2 | IB2CreateTempFile failed , errno[%d]\n" , errno );
+			return -1;
+		}
+		fclose( fp );
+		memset( command , 0x00 , sizeof(command) );
+		snprintf( command , sizeof(command)-1 , "cp %s %s" , user_data->file_pathfilename , file_pathfilename );
+		nret = system( command ) ;
+		if( nret == -1 )
+		{
+			printf( "pxplugin-ib2 | system[%s] failed[%d] , errno[%d]\n" , command , nret , errno );
+			return -1;
+		}
+		user_data->file_filename = strdup( file_filename ) ;
+		if( user_data->file_filename == NULL )
+		{
+			printf( "pxplugin-ib2 | strdup failed , errno[%d]\n" , errno );
+			return -1;
+		}
+		printf( "pxplugin-ib2 | set tmp file[%s]\n" , user_data->file_filename );
 	}
-	fclose( fp );
-	memset( command , 0x00 , sizeof(command) );
-	snprintf( command , sizeof(command)-1 , "cp %s %s" , user_data->file_pathfilename , file_pathfilename );
-	nret = system( command ) ;
-	if( nret == -1 )
-	{
-		printf( "pxplugin-ib2 | system[%s] failed[%d] , errno[%d]\n" , command , nret , errno );
-		return -1;
-	}
-	user_data->file_filename = strdup( file_filename ) ;
-	if( user_data->file_filename == NULL )
-	{
-		printf( "pxplugin-ib2 | strdup failed , errno[%d]\n" , errno );
-		return -1;
-	}
-	printf( "pxplugin-ib2 | set tmp file[%s]\n" , user_data->file_filename );
 	
 	user_data->file_pathfilename2 = gettok( NULL , PRESSX_BLANK_DELIM ) ;
-	memset( file_filename , 0x00 , sizeof(file_filename) );
-	memset( file_pathfilename , 0x00 , sizeof(file_pathfilename) );
-	fp = IB2CreateTempFile( file_filename , file_pathfilename , "w" ) ;
-	if( fp == NULL )
+	if( user_data->file_pathfilename2 )
 	{
-		printf( "pxplugin-ib2 | IB2CreateTempFile failed , errno[%d]\n" , errno );
-		return -1;
+		memset( file_filename , 0x00 , sizeof(file_filename) );
+		memset( file_pathfilename , 0x00 , sizeof(file_pathfilename) );
+		fp = IB2CreateTempFile( file_filename , file_pathfilename , "w" ) ;
+		if( fp == NULL )
+		{
+			printf( "pxplugin-ib2 | IB2CreateTempFile failed , errno[%d]\n" , errno );
+			return -1;
+		}
+		fclose( fp );
+		memset( command , 0x00 , sizeof(command) );
+		snprintf( command , sizeof(command)-1 , "cp %s %s" , user_data->file_pathfilename2 , file_pathfilename );
+		nret = system( command ) ;
+		if( nret == -1 )
+		{
+			printf( "pxplugin-ib2 | system[%s] failed[%d] , errno[%d]\n" , command , nret , errno );
+			return -1;
+		}
+		user_data->file_filename2 = strdup( file_filename ) ;
+		if( user_data->file_filename2 == NULL )
+		{
+			printf( "pxplugin-ib2 | strdup failed , errno[%d]\n" , errno );
+			return -1;
+		}
+		printf( "pxplugin-ib2 | set tmp file2[%s]\n" , user_data->file_filename2 );
 	}
-	fclose( fp );
-	memset( command , 0x00 , sizeof(command) );
-	snprintf( command , sizeof(command)-1 , "cp %s %s" , user_data->file_pathfilename2 , file_pathfilename );
-	nret = system( command ) ;
-	if( nret == -1 )
-	{
-		printf( "pxplugin-ib2 | system[%s] failed[%d] , errno[%d]\n" , command , nret , errno );
-		return -1;
-	}
-	user_data->file_filename2 = strdup( file_filename ) ;
-	if( user_data->file_filename2 == NULL )
-	{
-		printf( "pxplugin-ib2 | strdup failed , errno[%d]\n" , errno );
-		return -1;
-	}
-	printf( "pxplugin-ib2 | set tmp file2[%s]\n" , user_data->file_filename2 );
 	
 	SetPxPluginUserData( p_pxplugin_ctx , user_data );
 	
@@ -242,7 +270,19 @@ int CleanPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	
 	IB2FreeEnvironment( & (user_data->ib2_env) );
 	
-	free( user_data->msg_tpl );
+	if( user_data->node )
+		free( user_data->node );
+	if( user_data->app )
+		free( user_data->app );
+	if( user_data->msg_pathfilename )
+		free( user_data->msg_pathfilename );
+	if( user_data->file_pathfilename )
+		free( user_data->file_pathfilename );
+	if( user_data->file_pathfilename2 )
+		free( user_data->file_pathfilename2 );
+	
+	if( user_data->msg_tpl )
+		free( user_data->msg_tpl );
 	if( user_data->file_filename )
 		free( user_data->file_filename );
 	if( user_data->file_filename2 )

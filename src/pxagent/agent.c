@@ -68,6 +68,14 @@ int agent( struct PxAgent *p_pxagent )
 				close( p_pxagent->connected_session.netaddr.sock ); p_pxagent->connected_session.netaddr.sock = -1 ;
 				return -1;
 			}
+			
+			nret = app_UnloadPlugin( p_pxagent ) ;
+			if( nret < 0 )
+			{
+				printf( "*** ERROR : app_UnloadPlugin failed[%d]\n" , nret );
+				close( p_pxagent->connected_session.netaddr.sock ); p_pxagent->connected_session.netaddr.sock = -1 ;
+				return -1;
+			}
 		}
 	}
 	

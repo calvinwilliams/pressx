@@ -108,7 +108,7 @@ int app_CreateProcesses( struct PxAgent *p_agent )
 		}
 		else if( pids_array[process_index] == 0 )
 		{
-			nret = app_CreateThreads( p_agent , process_index , p_agent->perf_stat_base+process_index*sizeof(struct PxPerformanceStatMessage)*p_agent->run_pressing.thread_count ) ;
+			nret = app_CreateThreads( p_agent , process_index , p_agent->perf_stat_base+process_index*p_agent->run_pressing.thread_count ) ;
 			if( nret )
 			{
 				printf( "*** ERROR : app_CreateThreads failed[%d] , errno[%d]\n" , nret , errno );
@@ -213,12 +213,13 @@ int app_CreateThreads( struct PxAgent *p_agent , int process_index , struct PxPe
 
 void *app_ThreadEntry( void *p )
 {
-	struct PxPluginContext	*p_pxplugin_ctx = (struct PxPluginContext *)p ;
-	unsigned int		run_count ;
-	unsigned int		run_index ;
-	struct timeval		tv1 , tv2 , tv3 , tv4 , tv_diff ;
+	struct PxPluginContext		*p_pxplugin_ctx = (struct PxPluginContext *)p ;
+	unsigned int			run_count ;
+	unsigned int			run_index ;
+	struct PxPerformanceStatMessage	*perf_stat = NULL ;
+	struct timeval			tv1 , tv2 , tv3 , tv4 , tv_diff ;
 	
-	int			nret = 0 ;
+	int				nret = 0 ;
 	
 	nret = p_pxplugin_ctx->p_agent->pfuncInitPxPlugin( p_pxplugin_ctx ) ;
 	if( nret )
@@ -230,6 +231,7 @@ void *app_ThreadEntry( void *p )
 	gettimeofday( & tv1 , NULL );
 	
 	run_count = p_pxplugin_ctx->p_agent->run_pressing.run_count ;
+	perf_stat = p_pxplugin_ctx->perf_stat ;
 	for( run_index = 0 ; run_index < run_count ; run_index++ )
 	{
 		gettimeofday( & tv2 , NULL );
@@ -245,18 +247,18 @@ void *app_ThreadEntry( void *p )
 		DIFF_TIMEVAL( tv_diff , tv2 , tv3 )
 		if( run_index == 0 )
 		{
-			VAL_TIMEVAL( p_pxplugin_ctx->perf_stat->min_run_elapse , tv_diff )
-			VAL_TIMEVAL( p_pxplugin_ctx->perf_stat->max_run_elapse , tv_diff )
+			VAL_TIMEVAL( perf_stat->min_run_elapse , tv_diff )
+			VAL_TIMEVAL( perf_stat->max_run_elapse , tv_diff )
 		}
 		else
 		{
-			MIN_VAL_TIMEVAL( p_pxplugin_ctx->perf_stat->min_run_elapse , tv_diff )
-			MAX_VAL_TIMEVAL( p_pxplugin_ctx->perf_stat->max_run_elapse , tv_diff )
+			MIN_VAL_TIMEVAL( perf_stat->min_run_elapse , tv_diff )
+			MAX_VAL_TIMEVAL( perf_stat->max_run_elapse , tv_diff )
 		}
 	}
 	
 	gettimeofday( & tv4 , NULL );
-	DIFF_TIMEVAL( p_pxplugin_ctx->perf_stat->total_run_elapse , tv1 , tv4 )
+	DIFF_TIMEVAL( perf_stat->total_run_elapse , tv1 , tv4 )
 	
 	nret = p_pxplugin_ctx->p_agent->pfuncCleanPxPlugin( p_pxplugin_ctx ) ;
 	if( nret )
