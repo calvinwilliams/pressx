@@ -29,6 +29,12 @@ CFLAGS		=	$(_CFLAGS) \
 LFLAGS		=	$(_LFLAGS) \
 			-L$(HOME)/lib \
 			-lpxagent_api \
+			-lib2api \
+			-lib2core \
+			-lib2fmd \
+			-lib2ssd \
+			-lib2util \
+			-lhzb_log \
 
 ###### 额外宏定义区
 CLEAN_ADDITION	=
