@@ -1,5 +1,5 @@
 OS=`uname | awk '{print $1}'`
-VERSION=`pxmanager -v| awk '{print $2}'` | cut -c2-
+VERSION=`pxmanager -v| awk '{print $2}' | cut -c2-`
 
 BINFILES="	bin/pxmanager
 		bin/pxagent
@@ -16,5 +16,5 @@ SHFILES="	shbin/pressx_pack_bin.sh
 "
 
 cd $HOME
-tar cvzf logpipe-${OS}-${VERSION}-bin.tar.gz $BINFILES $LIBFILES $PLUGINFILES $SHFILES
+tar cvzf pressx-${OS}-${VERSION}-bin.tar.gz $BINFILES $LIBFILES $PLUGINFILES $SHFILES
 
