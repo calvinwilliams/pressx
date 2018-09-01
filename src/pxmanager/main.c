@@ -9,7 +9,7 @@ static void usage()
 	printf( "                  [ --process-count (count) ]\n" );
 	printf( "                  [ --thread-count (count) ]\n" );
 	printf( "                  [ --run-count (count) ]\n" );
-	printf( "                  [ --run-command (cmd) ]\n" );
+	printf( "                  [ --run-parameter (cmd) ]\n" );
 	return;
 }
 
