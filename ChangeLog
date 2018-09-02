@@ -1,2 +1,7 @@
+0.2.0		2018-09-02	calvin
+		* 新增插件pxplugin-tcp-connect
+		* 新增插件pxplugin-http
+
 0.1.0		2018-09-01	calvin
-		发布原型
+		* 发布原型
+		* 新增插件pxplugin-ib2

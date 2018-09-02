@@ -18,6 +18,8 @@
 #include <values.h>
 #include <dlfcn.h>
 
+char *strcasestr(const char *haystack, const char *needle);
+
 #include "list.h"
 
 #ifndef MAX

@@ -2,7 +2,7 @@
 
 #include "ib2api.h"
 
-/* run command format
+/* run parameter
 node app msg_pathfilename [ file_pathfilename [ file_pathfilename2 ] ]
 */
 
@@ -75,7 +75,7 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	p = gettok( NULL , PRESSX_BLANK_DELIM ) ;
 	if( p == NULL )
 	{
-		printf( "pxplugin-ib2 | expect 'app' in run command\n" );
+		printf( "pxplugin-ib2 | expect 'app' in run parameter\n" );
 		return -1;
 	}
 	user_data->app = strdup(p) ;
@@ -88,7 +88,7 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	p = gettok( NULL , PRESSX_BLANK_DELIM ) ;
 	if( p == NULL )
 	{
-		printf( "pxplugin-ib2 | expect 'msg_pathfilename' in run command\n" );
+		printf( "pxplugin-ib2 | expect 'msg_pathfilename' in run parameter\n" );
 		return -1;
 	}
 	user_data->msg_pathfilename = strdup(p) ;
