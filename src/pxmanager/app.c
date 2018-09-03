@@ -6,6 +6,8 @@ int app_ShowManagerInfo( struct PxManager *p_manager )
 	printf( "listen port : %d\n" , p_manager->listen_session.netaddr.port );
 	printf( "process count : %u\n" , p_manager->process_count );
 	printf( "thread count : %u\n" , p_manager->thread_count );
+	printf( "run count : %u\n" , p_manager->run_count );
+	printf( "run parameter : '%s'\n" , p_manager->run_parameter );
 	
 	return 0;
 }
@@ -19,6 +21,35 @@ int app_ShowCommSessions( struct PxManager *p_manager )
 		printf( "%s:%d\n" , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
 	}
 	
+	return 0;
+}
+
+int app_SetProcessCount( struct PxManager *p_manager , unsigned int process_count )
+{
+	p_manager->process_count = process_count ;
+	printf( "set process count to [%u]\n" , p_manager->process_count );
+	return 0;
+}
+
+int app_SetThreadCount( struct PxManager *p_manager , unsigned int thread_count )
+{
+	p_manager->thread_count = thread_count ;
+	printf( "set thread count to [%u]\n" , p_manager->thread_count );
+	return 0;
+}
+
+int app_SetRunCount( struct PxManager *p_manager , unsigned int run_count )
+{
+	p_manager->run_count = run_count ;
+	printf( "set run count to [%u]\n" , p_manager->run_count );
+	return 0;
+}
+
+int app_SetRunParameter( struct PxManager *p_manager , char *run_parameter )
+{
+	memset( p_manager->run_parameter , 0x00 , sizeof(p_manager->run_parameter) );
+	strncpy( p_manager->run_parameter , run_parameter , sizeof(p_manager->run_parameter)-1 );
+	printf( "set run parameter to [%s]\n" , p_manager->run_parameter );
 	return 0;
 }
 
@@ -117,10 +148,10 @@ int app_RunPressing( struct PxManager *p_manager )
 	printf( "all process and thread finished\n" );
 	printf( "--------- PERFORMANCE REPORT ---------\n" );
 	printf( "          total run count : %u\n" , total_run_count );
-	printf( "               min elapse : %ld.%06ld\n" , min_run_elapse.tv_sec , min_run_elapse.tv_usec );
-	printf( "               avg elapse : %.6lf\n" , avg_run_elapse / (double)total_run_count );
-	printf( "               max elapse : %ld.%06ld\n" , max_run_elapse.tv_sec , max_run_elapse.tv_usec );
+	printf( "               min elapse : %ld.%06ld (s)\n" , min_run_elapse.tv_sec , min_run_elapse.tv_usec );
+	printf( "               max elapse : %ld.%06ld (s)\n" , max_run_elapse.tv_sec , max_run_elapse.tv_usec );
 	printf( "  transactions per second : %.0lf\n" , (double)total_run_count / avg_run_elapse );
+	printf( "avg delay per transcation : %.6lf (s)\n" , avg_run_elapse / (double)total_run_count );
 	
 	return 0;
 }
