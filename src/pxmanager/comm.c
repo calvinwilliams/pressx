@@ -66,7 +66,9 @@ int comm_AcceptClientSocket( struct PxManager *p_manager , struct PxAcceptedSess
 	GETNETADDRESS( p_accepted_session->netaddr )
 	GETNETADDRESS_LOCAL( p_accepted_session->netaddr )
 	GETNETADDRESS_REMOTE( p_accepted_session->netaddr )
-	printf( "accept socket [%s:%d] ok\n" , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
+	/*
+ 	printf( "accept socket [%s:%d] ok\n" , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
+ 	*/
 	
 	list_add_tail( & (p_accepted_session->listnode) , & (p_manager->accepted_session_list) );
 	
@@ -77,7 +79,7 @@ int comm_AcceptClientSocket( struct PxManager *p_manager , struct PxAcceptedSess
 
 int comm_CloseClientSocket( struct PxManager *p_manager , struct PxAcceptedSession *p_accepted_session )
 {
-	printf( "close socket [%s:%d]\n" , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
+	printf( "close socket [%s@%s:%d]\n" , p_accepted_session->reg_msg.user_name , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
 	close( p_accepted_session->netaddr.sock );
 	
 	list_del( & (p_accepted_session->listnode) );

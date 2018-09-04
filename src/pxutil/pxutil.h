@@ -183,8 +183,8 @@ struct PxRunPressingMessage
 struct PxPerformanceStatMessage
 {
 	struct timeval	total_run_elapse ;
-	struct timeval	min_run_elapse ;
-	struct timeval	max_run_elapse ;
+	struct timeval	min_delay_elapse ;
+	struct timeval	max_delay_elapse ;
 } ;
 
 #endif

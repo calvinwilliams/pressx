@@ -204,6 +204,13 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 		return -1;
 	}
 	
+	/*
+	{
+		int	onoff = 1 ;
+		setsockopt( user_data->ib2_env->clisock , SOL_SOCKET , SO_REUSEADDR , (void *) & onoff , sizeof(int) );
+	}
+	*/
+	
 	memset( & msg_info , 0x00 , sizeof(struct IB2PackageInfo) );
 	strcpy( msg_info.struct_type , "IB2MSG_STRUCTTYPE" );
 	strcpy( msg_info.id , "IB2MSG_ID" );

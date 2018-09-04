@@ -16,7 +16,7 @@ struct PxStdinSession
 struct PxAcceptedSession
 {
 	struct NetAddress	netaddr ;
-	char			user_name[ PRESSX_MAXLEN_USER_NAME + 1 ] ;
+	struct PxRegisteMessage	reg_msg ;
 	
 	struct list_head	listnode ;
 } ;
