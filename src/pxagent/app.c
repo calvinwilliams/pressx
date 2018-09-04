@@ -247,18 +247,18 @@ void *app_ThreadEntry( void *p )
 		DIFF_TIMEVAL( tv_diff , tv2 , tv3 )
 		if( run_index == 0 )
 		{
-			VAL_TIMEVAL( perf_stat->min_delay_elapse , tv_diff )
-			VAL_TIMEVAL( perf_stat->max_delay_elapse , tv_diff )
+			VAL_TIMEVAL( perf_stat->min_delay_timeval , tv_diff )
+			VAL_TIMEVAL( perf_stat->max_delay_timeval , tv_diff )
 		}
 		else
 		{
-			MIN_VAL_TIMEVAL( perf_stat->min_delay_elapse , tv_diff )
-			MAX_VAL_TIMEVAL( perf_stat->max_delay_elapse , tv_diff )
+			MIN_VAL_TIMEVAL( perf_stat->min_delay_timeval , tv_diff )
+			MAX_VAL_TIMEVAL( perf_stat->max_delay_timeval , tv_diff )
 		}
 	}
 	
 	gettimeofday( & tv4 , NULL );
-	DIFF_TIMEVAL( perf_stat->total_run_elapse , tv1 , tv4 )
+	DIFF_TIMEVAL( perf_stat->run_timeval , tv1 , tv4 )
 	
 	nret = p_pxplugin_ctx->p_agent->pfuncCleanPxPlugin( p_pxplugin_ctx ) ;
 	if( nret )
