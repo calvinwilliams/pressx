@@ -16,7 +16,7 @@ struct PxStdinSession
 struct PxAcceptedSession
 {
 	struct NetAddress	netaddr ;
-	char			user_name[ PRESSX_MAXLEN_USER_NAME + 1 ] ;
+	struct PxRegisteMessage	reg_msg ;
 	
 	struct list_head	listnode ;
 } ;
@@ -43,6 +43,10 @@ int comm_CloseClientSocket( struct PxManager *p_manager , struct PxAcceptedSessi
 
 int app_ShowManagerInfo( struct PxManager *p_manager );
 int app_ShowCommSessions( struct PxManager *p_manager );
+int app_SetProcessCount( struct PxManager *p_manager , unsigned int process_count );
+int app_SetThreadCount( struct PxManager *p_manager , unsigned int thread_count );
+int app_SetRunCount( struct PxManager *p_manager , unsigned int run_count );
+int app_SetRunParameter( struct PxManager *p_manager , char *run_parameter );
 int app_RegisteAgent( struct PxManager *p_manager , struct PxAcceptedSession *p_accepted_session );
 int app_RunPressing( struct PxManager *p_manager );
 

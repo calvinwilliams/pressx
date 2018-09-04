@@ -2,7 +2,7 @@
 
 #include "ib2api.h"
 
-/* run command format
+/* run parameter
 node app msg_pathfilename [ file_pathfilename [ file_pathfilename2 ] ]
 */
 
@@ -75,7 +75,7 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	p = gettok( NULL , PRESSX_BLANK_DELIM ) ;
 	if( p == NULL )
 	{
-		printf( "pxplugin-ib2 | expect 'app' in run command\n" );
+		printf( "pxplugin-ib2 | expect 'app' in run parameter\n" );
 		return -1;
 	}
 	user_data->app = strdup(p) ;
@@ -88,7 +88,7 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	p = gettok( NULL , PRESSX_BLANK_DELIM ) ;
 	if( p == NULL )
 	{
-		printf( "pxplugin-ib2 | expect 'msg_pathfilename' in run command\n" );
+		printf( "pxplugin-ib2 | expect 'msg_pathfilename' in run parameter\n" );
 		return -1;
 	}
 	user_data->msg_pathfilename = strdup(p) ;
@@ -203,6 +203,13 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 		printf( "pxplugin-ib2 | IB2ConnectToServerByServerNode[%s] failed[%d]\n" , user_data->node , nret );
 		return -1;
 	}
+	
+	/*
+	{
+		int	onoff = 1 ;
+		setsockopt( user_data->ib2_env->clisock , SOL_SOCKET , SO_REUSEADDR , (void *) & onoff , sizeof(int) );
+	}
+	*/
 	
 	memset( & msg_info , 0x00 , sizeof(struct IB2PackageInfo) );
 	strcpy( msg_info.struct_type , "IB2MSG_STRUCTTYPE" );

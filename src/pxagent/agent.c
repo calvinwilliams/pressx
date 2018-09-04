@@ -15,14 +15,13 @@ int agent( struct PxAgent *p_pxagent )
 			nret = comm_CreateClientSocket( p_pxagent ) ;
 			if( nret )
 			{
-				printf( "*** ERROR : comm_CreateClientSocket failed[%d]\n" , nret );
-				return nret;
+				sleep(3);
+				continue;
 			}
 			
 			nret = app_RegisteAgent( p_pxagent ) ;
 			if( nret )
 			{
-				printf( "*** ERROR : app_RegisteAgent failed[%d]\n" , nret );
 				return nret;
 			}
 		}
@@ -42,9 +41,9 @@ int agent( struct PxAgent *p_pxagent )
 			nret = readn( p_pxagent->connected_session.netaddr.sock , (char*)&(p_pxagent->run_pressing) , sizeof(struct PxRunPressingMessage) , NULL ) ;
 			if( nret == 1 )
 			{
-				printf( "*** ERROR : server closed on readn\n" );
+				printf( "server socket closed\n" );
 				close( p_pxagent->connected_session.netaddr.sock ); p_pxagent->connected_session.netaddr.sock = -1 ;
-				break;
+				continue;
 			}
 			else if( nret < 0 )
 			{

@@ -2,13 +2,13 @@
 
 int app_RegisteAgent( struct PxAgent *p_agent )
 {
-	struct PxRegisteMessage		msg ;
+	struct PxRegisteMessage		reg_msg ;
 	
 	int				nret = 0 ;
 	
-	memset( & msg , 0x00 , sizeof(struct PxRegisteMessage ) );
-	strncpy( msg.user_name , GetUsernamePtr() , sizeof(msg.user_name)-1 );
-	nret = writen( p_agent->connected_session.netaddr.sock , (char*)&msg , sizeof(struct PxRegisteMessage) , NULL ) ;
+	memset( & reg_msg , 0x00 , sizeof(struct PxRegisteMessage ) );
+	strncpy( reg_msg.user_name , GetUsernamePtr() , sizeof(reg_msg.user_name)-1 );
+	nret = writen( p_agent->connected_session.netaddr.sock , (char*) & reg_msg , sizeof(struct PxRegisteMessage) , NULL ) ;
 	if( nret )
 	{
 		printf( "*** ERROR : writen failed[%d] , errno[%d]\n" , nret , errno );
@@ -247,13 +247,13 @@ void *app_ThreadEntry( void *p )
 		DIFF_TIMEVAL( tv_diff , tv2 , tv3 )
 		if( run_index == 0 )
 		{
-			VAL_TIMEVAL( perf_stat->min_run_elapse , tv_diff )
-			VAL_TIMEVAL( perf_stat->max_run_elapse , tv_diff )
+			VAL_TIMEVAL( perf_stat->min_delay_elapse , tv_diff )
+			VAL_TIMEVAL( perf_stat->max_delay_elapse , tv_diff )
 		}
 		else
 		{
-			MIN_VAL_TIMEVAL( perf_stat->min_run_elapse , tv_diff )
-			MAX_VAL_TIMEVAL( perf_stat->max_run_elapse , tv_diff )
+			MIN_VAL_TIMEVAL( perf_stat->min_delay_elapse , tv_diff )
+			MAX_VAL_TIMEVAL( perf_stat->max_delay_elapse , tv_diff )
 		}
 	}
 	
