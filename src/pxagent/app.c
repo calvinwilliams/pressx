@@ -27,28 +27,28 @@ int app_LoadPlugin( struct PxAgent *p_agent )
 	p_agent->so_handler = dlopen( plugin_pathfilename , RTLD_LAZY ) ;
 	if( p_agent->so_handler == NULL )
 	{
-		printf( "*** ERROR : dlopen[%s] failed , errno[%d]\n" , plugin_pathfilename , errno );
+		printf( "*** ERROR : dlopen[%s] failed , errno[%d] dlerror[%s]\n" , plugin_pathfilename , errno , dlerror() );
 		return -1;
 	}
 	
 	p_agent->pfuncInitPxPlugin = (funcInitPxPlugin *)dlsym( p_agent->so_handler , "InitPxPlugin" ) ;
 	if( p_agent->pfuncInitPxPlugin == NULL )
 	{
-		printf( "*** ERROR : dlsym[%s][%s] failed , errno[%d]\n" , plugin_pathfilename , "InitPxPlugin" , errno );
+		printf( "*** ERROR : dlsym[%s][%s] failed , errno[%d] dlerror[%s]\n" , plugin_pathfilename , "InitPxPlugin" , errno , dlerror() );
 		return -1;
 	}
 	
 	p_agent->pfuncRunPxPlugin = (funcRunPxPlugin *)dlsym( p_agent->so_handler , "RunPxPlugin" ) ;
 	if( p_agent->pfuncRunPxPlugin == NULL )
 	{
-		printf( "*** ERROR : dlsym[%s][%s] failed , errno[%d]\n" , plugin_pathfilename , "RunPxPlugin" , errno );
+		printf( "*** ERROR : dlsym[%s][%s] failed , errno[%d] dlerror[%s]\n" , plugin_pathfilename , "RunPxPlugin" , errno , dlerror() );
 		return -1;
 	}
 	
 	p_agent->pfuncCleanPxPlugin = (funcCleanPxPlugin *)dlsym( p_agent->so_handler , "CleanPxPlugin" ) ;
 	if( p_agent->pfuncCleanPxPlugin == NULL )
 	{
-		printf( "*** ERROR : dlsym[%s][%s] failed , errno[%d]\n" , plugin_pathfilename , "CleanPxPlugin" , errno );
+		printf( "*** ERROR : dlsym[%s][%s] failed , errno[%d] dlerror[%s]\n" , plugin_pathfilename , "CleanPxPlugin" , errno , dlerror() );
 		return -1;
 	}
 	
