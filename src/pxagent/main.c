@@ -1,7 +1,7 @@
 #include "pxagent_in.h"
 
-char	_PXAGENT_VERSION_0_1_0[] = "0.1.0" ;
-char	*_PXAGENT_VERSION = _PXAGENT_VERSION_0_1_0 ;
+char	_PXAGENT_VERSION_0_2_1[] = "0.2.1" ;
+char	*_PXAGENT_VERSION = _PXAGENT_VERSION_0_2_1 ;
 
 static void usage()
 {
