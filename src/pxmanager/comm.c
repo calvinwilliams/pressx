@@ -79,7 +79,7 @@ int comm_AcceptClientSocket( struct PxManager *p_manager , struct PxAcceptedSess
 
 int comm_CloseClientSocket( struct PxManager *p_manager , struct PxAcceptedSession *p_accepted_session )
 {
-	printf( "close socket [%s@%s:%d]\n" , p_accepted_session->reg_msg.user_name , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
+	printf( "pxagent [%s@%s:%d] disconnected\n" , p_accepted_session->reg_msg.user_name , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
 	close( p_accepted_session->netaddr.sock );
 	
 	list_del( & (p_accepted_session->listnode) );

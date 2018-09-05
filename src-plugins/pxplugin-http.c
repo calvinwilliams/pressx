@@ -3,8 +3,9 @@
 struct PxPluginUserData
 {
 	struct NetAddress	netaddr ;
-	char			*http ;
-	int			http_len ;
+	unsigned char		output_flag ;
+	char			*request ;
+	int			request_len ;
 	char			*http_1_0 ;
 	char			*http_1_1 ;
 	char			*connection__keep_alive ;
@@ -13,14 +14,23 @@ struct PxPluginUserData
 
 /* run parameter for GET method
 ip:port
-GET uri HTTP/1.1
+GET (uri) HTTP/1.1
 [ request-headers ]
 
 */
 
+/* for example
+$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 --process-count 1 --thread-count 1 --run-count 1 --run-plugin pxplugin-request.so --run-parameter "192.168.6.21:80
+GET / HTTP/1.1
+User-Agent: Mozilla/4.0
+Host: localhost
+
+"
+*/
+
 /* run parameter for POST method
 ip:port
-POST uri HTTP/1.1
+POST (uri) HTTP/1.1
 [ request-headers ]
 
 [ post data ]
@@ -28,7 +38,7 @@ POST uri HTTP/1.1
 
 /* run parameter for GET method and keep-alive
 ip:port
-GET uri HTTP/1.1
+GET (uri) HTTP/1.1
 [ request-headers ]
 Connection: Keep-Alive
 
@@ -40,71 +50,53 @@ funcInitPxPlugin InitPxPlugin ;
 int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 {
 	struct PxPluginUserData	*user_data = NULL ;
-	char			*ip_or_and_port = NULL ;
-	int			ip_or_and_port_len ;
-	char			*ip = NULL ;
-	char			*port = NULL ;
-	char			*http = NULL ;
+	char			*request = NULL ;
 	
 	int			nret = 0 ;
 	
 	user_data = (struct PxPluginUserData *)malloc( sizeof(struct PxPluginUserData) ) ;
 	if( user_data == NULL )
 	{
-		printf( "pxplugin-http | malloc PxPluginUserData failed , errno[%d]\n" , errno );
+		printf( "pxplugin-request | malloc PxPluginUserData failed , errno[%d]\n" , errno );
 		return -1;
 	}
 	memset( user_data , 0x00 , sizeof(struct PxPluginUserData) );
 	
 	user_data->netaddr.addr.sin_family = AF_INET ;
 	
-	ip_or_and_port = gettok( GetPxPluginRunParameterPtr(p_pxplugin_ctx) , "\n" ) ;
-	if( ip_or_and_port == NULL || ip_or_and_port[0] == '\0' )
+	sscanf( GetPxPluginRunParameterPtr(p_pxplugin_ctx) , "%[^:]:%d" , user_data->netaddr.ip , & (user_data->netaddr.port) );
+	if( user_data->netaddr.ip[0] == '\0' || user_data->netaddr.port <= 0 )
 	{
-		printf( "pxplugin-http | expect 'ip[:port]' in run parameter\n" );
+		printf( "pxplugin-tcp-connect | run parameter '%s' invalid for format '(ip):(port)'\n" , GetPxPluginRunParameterPtr(p_pxplugin_ctx) );
 		return -1;
 	}
-	ip_or_and_port_len = strlen( ip_or_and_port ) ;
 	
-	port = strchr( ip_or_and_port , ':' ) ;
-	if( port )
-	{
-		port[0] = '\0' ;
-		ip = ip_or_and_port ;
-		user_data->netaddr.addr.sin_addr.s_addr = inet_addr(ip) ;
-		port++;
-		user_data->netaddr.addr.sin_port = htons( (unsigned short)atoi(port) );
-	}
-	else
-	{
-		ip = ip_or_and_port ;
-		user_data->netaddr.addr.sin_addr.s_addr = inet_addr(ip) ;
-		user_data->netaddr.addr.sin_port = htons( (unsigned short)80 );
-	}
+	user_data->netaddr.addr.sin_addr.s_addr = inet_addr(user_data->netaddr.ip) ;
+	user_data->netaddr.addr.sin_port = htons( (unsigned short)user_data->netaddr.port );
 	
-	http = GetPxPluginRunParameterPtr(p_pxplugin_ctx) + ip_or_and_port_len ;
-	if( http[0] == '\0' )
+	request = strchr( GetPxPluginRunParameterPtr(p_pxplugin_ctx) , '\n' ) ;
+	if( request[0] == '\0' )
 	{
-		printf( "pxplugin-http | expect 'http' in run parameter\n" );
+		printf( "pxplugin-request | expect 'request' in run parameter\n" );
 		return -1;
 	}
-	user_data->http = strdup( http ) ;
-	if( user_data->http == NULL )
+	user_data->request = strdup( request ) ;
+	if( user_data->request == NULL )
 	{
-		printf( "pxplugin-http | strdup failed , errno[%d]\n" , errno );
+		printf( "pxplugin-request | strdup failed , errno[%d]\n" , errno );
 		return -1;
 	}
-	user_data->http_len = strlen(user_data->http) ;
+	user_data->request_len = strlen(user_data->request) ;
 	
-	user_data->http_1_0 = STRISTR( user_data->http , "HTTP/1.0" ) ;
-	user_data->http_1_1 = STRISTR( user_data->http , "HTTP/1.1" ) ;
-	user_data->connection__keep_alive = STRISTR( user_data->http , "Connection: Keep-Alive" ) ;
+	user_data->http_1_0 = STRISTR( user_data->request , "HTTP/1.0" ) ;
+	user_data->http_1_1 = STRISTR( user_data->request , "HTTP/1.1" ) ;
+	user_data->connection__keep_alive = STRISTR( user_data->request , "Connection: Keep-Alive" ) ;
 	
-	if( user_data->http_1_0 && user_data->connection__keep_alive )
+	if( user_data->http_1_0 && STRISTR( user_data->request , "Connection: keep-alive" ) )
 	{
 		user_data->keep_alive = 1 ;
 	}
-	else if( user_data->http_1_1 && ! user_data->connection__keep_alive )
+	else if( user_data->http_1_1 )
 	{
 		user_data->keep_alive = 1 ;
 	}
@@ -112,6 +104,7 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	{
 		user_data->keep_alive = 0 ;
 	}
+	printf( "keep_alive[%d]\n" , user_data->keep_alive );
 	
 	if( user_data->keep_alive == 1 )
 	{
@@ -130,6 +123,14 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 			close( user_data->netaddr.sock ); user_data->netaddr.sock = -1 ;
 			return -1;
 		}
+		else
+		{
+			printf( "connect[%s:%d] ok\n" , user_data->netaddr.ip , user_data->netaddr.port );
+		}
+	}
+	else
+	{
+		user_data->netaddr.sock = -1 ;
 	}
 	
 	SetPxPluginUserData( p_pxplugin_ctx , user_data );
@@ -143,10 +144,12 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	struct PxPluginUserData	*user_data = NULL ;
 	char			response_buffer[ 4096 + 1 ] ;
 	int			response_len ;
+	int			header_len ;
 	char			*p = NULL ;
 	int			status_code ;
 	char			*content_length = NULL ;
 	int			remain_len ;
+	char			remain_buffer[ 4096 + 1 ] ;
 	int			block_len ;
 	int			len ;
 	
@@ -154,7 +157,7 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	
 	user_data = GetPxPluginUserData( p_pxplugin_ctx ) ;
 	
-	if( user_data->keep_alive == 0 )
+	if( user_data->keep_alive == 0 || user_data->netaddr.sock == -1 )
 	{
 		user_data->netaddr.sock = socket( AF_INET , SOCK_STREAM , IPPROTO_TCP ) ;
 		if( user_data->netaddr.sock == -1 )
@@ -171,13 +174,23 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 			close( user_data->netaddr.sock ); user_data->netaddr.sock = -1 ;
 			return -1;
 		}
+		else
+		{
+			if( user_data->output_flag == 0 )
+				printf( "connect[%s:%d] ok\n" , user_data->netaddr.ip , user_data->netaddr.port );
+		}
 	}
 	
-	nret = writen( user_data->netaddr.sock , user_data->http , user_data->http_len , NULL ) ;
+	nret = writen( user_data->netaddr.sock , user_data->request , user_data->request_len , NULL ) ;
 	if( nret )
 	{
 		printf( "*** ERROR : writen failed , errno[%d]\n" , errno );
 		return -1;
+	}
+	else
+	{
+		if( user_data->output_flag == 0 )
+			printf( "request[%.*s]\n" , user_data->request_len , user_data->request );
 	}
 	
 	remain_len = -1 ;
@@ -186,35 +199,34 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	response_len = read( user_data->netaddr.sock , response_buffer , sizeof(response_buffer)-1 ) ;
 	if( response_len == 0 )
 	{
-		printf( "*** ERROR : socket closed on reading\n" );
+		printf( "*** ERROR : socket closed on first reading\n" );
 		return -1;
 	}
 	else if( response_len == -1 )
 	{
-		printf( "*** ERROR : read failed[%d] , errno[%d]\n" , response_len , errno );
+		printf( "*** ERROR : first read failed[%d] , errno[%d]\n" , response_len , errno );
 		return -1;
 	}
-	
-	p = gettok( response_buffer , " " ) ;
-	if( p == NULL )
+	else
 	{
-		printf( "*** ERROR : http response [%s] invalid\n" , response_buffer );
-		return -1;
+		if( user_data->output_flag == 0 )
+			printf( "first response[%.*s]\n" , response_len , response_buffer );
 	}
 	
-	p = gettok( NULL , " " ) ;
-	if( p == NULL )
-	{
-		printf( "*** ERROR : http response [%s] invalid\n" , response_buffer );
-		return -1;
-	}
-	
-	status_code = atoi(p);
+	sscanf( response_buffer , "%*s%d" , & status_code );
 	if( status_code != 200 )
 	{
-		printf( "*** ERROR : http status code [%03d]\n" , status_code );
+		printf( "*** ERROR : request status code [%03d]\n" , status_code );
 		return -1;
 	}
+	
+	p = strstr( response_buffer , "\r\n\r\n" ) ;
+	if( p == NULL )
+	{
+		printf( "*** ERROR : big request response[%s]\n" , response_buffer );
+		return -1;
+	}
+	header_len = p+4 - response_buffer ;
 	
 	content_length = STRISTR( response_buffer , CONTENT_LENGTH ) ;
 	if( content_length == NULL )
@@ -225,38 +237,47 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 		}
 		else
 		{
-			printf( "*** ERROR : big http response[%s]\n" , response_buffer );
+			printf( "*** ERROR : big request response[%s]\n" , response_buffer );
 			return -1;
 		}
 	}
 	else
 	{
-		remain_len = atoi(content_length+sizeof(CONTENT_LENGTH)) - response_len ;
+		remain_len = atoi(content_length+sizeof(CONTENT_LENGTH)-1) - (response_len-header_len) ;
 		
 		while( remain_len > 0 )
 		{
-			block_len = MIN( remain_len , sizeof(response_buffer)-1 ) ;
-			memset( response_buffer , 0x00 , sizeof(response_buffer) );
-			len = read( user_data->netaddr.sock , response_buffer , block_len ) ;
+			block_len = MIN( remain_len , sizeof(remain_buffer)-1 ) ;
+			memset( remain_buffer , 0x00 , sizeof(remain_buffer) );
+			len = read( user_data->netaddr.sock , remain_buffer , block_len ) ;
 			if( len == 0 )
 			{
-				printf( "*** ERROR : socket closed on reading\n" );
+				printf( "*** ERROR : socket closed on continue reading\n" );
 				return -1;
 			}
 			else if( len == -1 )
 			{
-				printf( "*** ERROR : read failed[%d] , errno[%d]\n" , block_len , errno );
+				printf( "*** ERROR : continue read failed[%d] , errno[%d]\n" , block_len , errno );
 				return -1;
+			}
+			else
+			{
+				if( user_data->output_flag == 0 )
+					printf( "continue response[%.*s]\n" , len , remain_buffer );
 			}
 			
 			remain_len -= len ;
 		}
 	}
 	
-	if( user_data->keep_alive == 0 )
+	if( user_data->keep_alive == 0 || STRISTR( response_buffer , "Connection: Close" ) )
 	{
-		close( user_data->netaddr.sock );
+		if( user_data->output_flag == 0 )
+			printf( "disconnect[%s:%d]\n" , user_data->netaddr.ip , user_data->netaddr.port );
+		close( user_data->netaddr.sock ); user_data->netaddr.sock = -1 ;
 	}
+	
+	user_data->output_flag = 1 ;
 	
 	return 0;
 }
@@ -270,11 +291,12 @@ int CleanPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	
 	if( user_data->keep_alive == 1 )
 	{
-		close( user_data->netaddr.sock );
+		printf( "disconnect[%s:%d]\n" , user_data->netaddr.ip , user_data->netaddr.port );
+		close( user_data->netaddr.sock ); user_data->netaddr.sock = -1 ;
 	}
 	
-	if( user_data->http )
-		free( user_data->http );
+	if( user_data->request )
+		free( user_data->request );
 	
 	free( user_data );
 	

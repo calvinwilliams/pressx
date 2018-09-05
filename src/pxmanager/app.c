@@ -63,7 +63,7 @@ int app_RegisteAgent( struct PxManager *p_manager , struct PxAcceptedSession *p_
 	nret = readn( p_accepted_session->netaddr.sock , (char*) & reg_msg , sizeof(struct PxRegisteMessage) , NULL ) ;
 	if( nret == 1 )
 	{
-		printf( "readn socket closed\n" );
+		printf( "pxagent closed on connecting\n" );
 		return 1;
 	}
 	else if( nret )
@@ -73,7 +73,7 @@ int app_RegisteAgent( struct PxManager *p_manager , struct PxAcceptedSession *p_
 	}
 	
 	memcpy( & (p_accepted_session->reg_msg) , & reg_msg , sizeof(struct PxRegisteMessage) );
-	printf( "client %s@%s:%d registed\n" , p_accepted_session->reg_msg.user_name , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
+	printf( "pxagent %s@%s:%d connected\n" , p_accepted_session->reg_msg.user_name , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
 	
 	return 0;
 }
@@ -99,6 +99,16 @@ int app_RunPressing( struct PxManager *p_manager )
 	host_count = 0 ;
 	list_for_each_entry( p_accepted_session , & (p_manager->accepted_session_list) , struct PxAcceptedSession , listnode )
 	{
+		host_count++;
+	}
+	if( host_count == 0 )
+	{
+		printf( "no pxagents\n" );
+		return 0;
+	}
+	
+	list_for_each_entry( p_accepted_session , & (p_manager->accepted_session_list) , struct PxAcceptedSession , listnode )
+	{
 		memset( & run_pressing , 0x00 , sizeof(struct PxRunPressingMessage) );
 		run_pressing.process_count = p_manager->process_count ;
 		run_pressing.thread_count = p_manager->thread_count ;
@@ -113,7 +123,6 @@ int app_RunPressing( struct PxManager *p_manager )
 		}
 		
 		printf( "%s@%s:%d run pressing ...\n" , p_accepted_session->reg_msg.user_name , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
-		host_count++;
 	}
 	
 	process_thread_count = p_manager->process_count * p_manager->thread_count ;
@@ -127,7 +136,7 @@ int app_RunPressing( struct PxManager *p_manager )
 	
 	list_for_each_entry( p_accepted_session , & (p_manager->accepted_session_list) , struct PxAcceptedSession , listnode )
 	{
-		printf( "waiting %s@%s:%d finishing ... " , p_accepted_session->reg_msg.user_name , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
+		printf( "waiting %s@%s:%d finishing ...\n" , p_accepted_session->reg_msg.user_name , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
 		
 		for( process_thread_idex = 0 ; process_thread_idex < process_thread_count ; process_thread_idex++ )
 		{
@@ -136,7 +145,7 @@ int app_RunPressing( struct PxManager *p_manager )
 			if( nret )
 			{
 				printf( "*** ERROR : readn failed[%d] , errno[%d]\n" , nret , errno );
-				return -1;
+				return 0;
 			}
 			
 			printf( "run_count[%u] run_timeval[%ld.%06ld] min_delay_timeval[%ld.%06ld] max_delay_timeval[%ld.%06ld]\n" , p_manager->run_count , perf_stat.run_timeval.tv_sec,perf_stat.run_timeval.tv_usec , perf_stat.min_delay_timeval.tv_sec,perf_stat.min_delay_timeval.tv_usec , perf_stat.max_delay_timeval.tv_sec,perf_stat.max_delay_timeval.tv_usec );
