@@ -13,6 +13,7 @@ c_FILE		=	\
 			pxplugin-http.c \
 			fasterhttp.c \
 			pxplugin-http-fasterhttp.c \
+			pxplugin-http-fasterhttp-IOMP.c \
 
 ###### 目标文件、安装目录配置区
 include makeinstall
@@ -20,6 +21,8 @@ LIB		=	\
 			pxplugin-tcp-connect.so \
 			pxplugin-http.so \
 			pxplugin-http-fasterhttp.so \
+
+#			pxplugin-http-fasterhttp-IOMP.so \
 
 LIBINST		=	$(HOME)/so
 
@@ -91,4 +94,7 @@ pxplugin-http.so	:	pxplugin-http.o
 
 pxplugin-http-fasterhttp.so	:	pxplugin-http-fasterhttp.o fasterhttp.o
 	$(CC) -o $@ pxplugin-http-fasterhttp.o fasterhttp.o $(SOFLAGS) $(LFLAGS)
+
+pxplugin-http-fasterhttp-IOMP.so	:	pxplugin-http-fasterhttp-IOMP.o fasterhttp.o
+	$(CC) -o $@ pxplugin-http-fasterhttp-IOMP.o fasterhttp.o $(SOFLAGS) $(LFLAGS)
 
