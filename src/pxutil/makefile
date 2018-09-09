@@ -12,6 +12,7 @@ c_FILE		=	\
 			string.c \
 			os.c \
 			socket.c \
+			file.c \
 
 ###### 目标文件、安装目录配置区
 include makeinstall

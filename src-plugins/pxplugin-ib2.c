@@ -98,26 +98,16 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 		return -1;
 	}
 	
-	fp = fopen( user_data->msg_pathfilename , "r" ) ;
-	if( fp == NULL )
+	nret = PXReadEntireFile( user_data->msg_pathfilename , & (user_data->msg_tpl) , & user_data->msg_tpl_len ) ;
+	if( nret )
 	{
-		printf( "pxplugin-ib2 | fopen[%s] failed , errno[%d]\n" , user_data->msg_pathfilename , errno );
+		printf( "pxplugin-ib2 | PXReadEntireFile[%s] failed[%d] , errno[%d]\n" , user_data->msg_pathfilename , nret , errno );
 		return -1;
 	}
-	fseek( fp , 0 , SEEK_END );
-	user_data->msg_tpl_len = ftell( fp ) ;
-	fseek( fp , 0 , SEEK_SET );
-	user_data->msg_tpl = (char *)malloc( user_data->msg_tpl_len+1 ) ;
-	nret = fread( user_data->msg_tpl , user_data->msg_tpl_len , 1 , fp ) ;
-	if( nret != 1 )
+	else
 	{
-		printf( "pxplugin-ib2 | fread[%s] failed , errno[%d]\n" , user_data->msg_pathfilename , errno );
-		fclose( fp );
-		return -1;
+		printf( "pxplugin-ib2 | PXReadEntireFile[%s] ok , msg_tpl_len[%d]\n" , user_data->msg_pathfilename , user_data->msg_tpl_len );
 	}
-	user_data->msg_tpl[user_data->msg_tpl_len] = '\0' ;
-	fclose( fp );
-	printf( "pxplugin-ib2 | load msg tpl file[%s] ok , len[%d]\n" , user_data->msg_pathfilename , user_data->msg_tpl_len );
 	
 	user_data->file_pathfilename = gettok( NULL , PRESSX_BLANK_DELIM ) ;
 	if( user_data->file_pathfilename )

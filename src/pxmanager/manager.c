@@ -65,23 +65,23 @@ int manager( struct PxManager *p_manager )
 				sscanf( stdin_command_buffer , "%*s%*[^']'%[^']" , stdin_command_parameter2 );
 			}
 			
-			if( STRMINCMP( "?" , == , stdin_command_buffer ) )
+			if( stdin_command_buffer[0] == '?' )
 			{
 				printf( "? - help\n" );
-				printf( "quit - quit manager\n" );
-				printf( "info - show info\n" );
-				printf( "sessions - show sessions of client\n" );
-				printf( "process (process_count) - set process count\n" );
-				printf( "thead (thread_count) - set thread count\n" );
-				printf( "count (run_count) - set run count\n" );
-				printf( "arameter '(run_parameter)' - set run parameter\n" );
-				printf( "run - begin running press\n" );
+				printf( "q - quit manager\n" );
+				printf( "i - show info\n" );
+				printf( "s - show sessions of client\n" );
+				printf( "p (process_count) - set process count\n" );
+				printf( "t (thread_count) - set thread count\n" );
+				printf( "n (run_count) - set run count\n" );
+				printf( "m '(run_parameter)' - set run parameter\n" );
+				printf( "r - begin running press\n" );
 			}
-			else if( STRMINCMP( "quit" , == , stdin_command_buffer ) )
+			else if( stdin_command_buffer[0] == 'q' )
 			{
 				break;
 			}
-			else if( STRMINCMP( "info" , == , stdin_command_buffer ) )
+			else if( stdin_command_buffer[0] == 'i' )
 			{
 				nret = app_ShowManagerInfo( p_manager ) ;
 				if( nret )
@@ -90,7 +90,7 @@ int manager( struct PxManager *p_manager )
 					break;
 				}
 			}
-			else if( STRMINCMP( "sessions" , == , stdin_command_buffer ) )
+			else if( stdin_command_buffer[0] == 's' )
 			{
 				nret = app_ShowCommSessions( p_manager ) ;
 				if( nret )
@@ -99,7 +99,7 @@ int manager( struct PxManager *p_manager )
 					break;
 				}
 			}
-			else if( STRMINCMP( "process" , == , stdin_command_parameter1 ) )
+			else if( stdin_command_parameter1[0] == 'p' )
 			{
 				nret = app_SetProcessCount( p_manager , atoi(stdin_command_parameter2) ) ;
 				if( nret )
@@ -108,7 +108,7 @@ int manager( struct PxManager *p_manager )
 					break;
 				}
 			}
-			else if( STRMINCMP( "thread" , == , stdin_command_parameter1 ) )
+			else if( stdin_command_parameter1[0] == 't' )
 			{
 				nret = app_SetThreadCount( p_manager , atoi(stdin_command_parameter2) ) ;
 				if( nret )
@@ -117,7 +117,7 @@ int manager( struct PxManager *p_manager )
 					break;
 				}
 			}
-			else if( STRMINCMP( "count" , == , stdin_command_parameter1 ) )
+			else if( stdin_command_parameter1[0] == 'n' )
 			{
 				nret = app_SetRunCount( p_manager , atoi(stdin_command_parameter2) ) ;
 				if( nret )
@@ -126,7 +126,7 @@ int manager( struct PxManager *p_manager )
 					break;
 				}
 			}
-			else if( STRMINCMP( "arameter" , == , stdin_command_parameter1 ) )
+			else if( stdin_command_parameter1[0] == 'm' )
 			{
 				nret = app_SetRunParameter( p_manager , stdin_command_parameter2 ) ;
 				if( nret )
@@ -135,7 +135,7 @@ int manager( struct PxManager *p_manager )
 					break;
 				}
 			}
-			else if( STRMINCMP( "run" , == , stdin_command_buffer ) )
+			else if( stdin_command_buffer[0] == 'r' )
 			{
 				nret = app_RunPressing( p_manager ) ;
 				if( nret )

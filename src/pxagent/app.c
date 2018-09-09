@@ -181,6 +181,8 @@ int app_CreateThreads( struct PxAgent *p_agent , int process_index , struct PxPe
 	for( thread_index = 0 ; thread_index < p_agent->run_pressing.thread_count ; thread_index++ )
 	{
 		pxplugin_ctx_array[thread_index].p_agent = p_agent ;
+		pxplugin_ctx_array[thread_index].process_index = process_index ;
+		pxplugin_ctx_array[thread_index].thread_index = thread_index ;
 		pxplugin_ctx_array[thread_index].perf_stat = perf_stat_base_in_this_process+thread_index ;
 		nret = pthread_create( tids_array+thread_index , NULL , app_ThreadEntry , (void*)(pxplugin_ctx_array+thread_index) ) ;
 		if( nret == -1 )
@@ -216,6 +218,7 @@ void *app_ThreadEntry( void *p )
 	struct PxPluginContext		*p_pxplugin_ctx = (struct PxPluginContext *)p ;
 	unsigned int			run_count ;
 	unsigned int			run_index ;
+	unsigned int			run_one_over_ten ;
 	struct PxPerformanceStatMessage	*perf_stat = NULL ;
 	struct timeval			tv1 , tv2 , tv3 , tv4 , tv_diff ;
 	
@@ -232,7 +235,8 @@ void *app_ThreadEntry( void *p )
 	
 	run_count = p_pxplugin_ctx->p_agent->run_pressing.run_count ;
 	perf_stat = p_pxplugin_ctx->perf_stat ;
-	for( run_index = 0 ; run_index < run_count ; run_index++ )
+	run_one_over_ten = run_count / 10 ;
+	for( run_index = 0 ; run_index < run_count ; )
 	{
 		gettimeofday( & tv2 , NULL );
 		
@@ -254,6 +258,15 @@ void *app_ThreadEntry( void *p )
 		{
 			MIN_VAL_TIMEVAL( perf_stat->min_delay_timeval , tv_diff )
 			MAX_VAL_TIMEVAL( perf_stat->max_delay_timeval , tv_diff )
+		}
+		
+		run_index++;
+		if( p_pxplugin_ctx->process_index == 0 && p_pxplugin_ctx->thread_index == 0 )
+		{
+			if( run_one_over_ten > 0 && run_index % run_one_over_ten == 0 )
+			{
+				printf( "[%u/%u] Finished\n" , run_index , run_count ); fflush(stdout);
+			}
 		}
 	}
 	
