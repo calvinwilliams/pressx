@@ -4,19 +4,25 @@
 
 struct PxPluginUserData
 {
-	struct NetAddress	netaddr ;
 	unsigned char		output_flag ;
 	char			*request ;
 	int			request_len ;
+	int			iomp_count ;
+	int			total_run_count ;
+} ;
+
+struct PxIompSession
+{
+	struct NetAddress	netaddr ;
 	struct HttpEnv		*http_env ;
 } ;
 
 /* run parameter
-ip port http_request_pathfilename
+ip port http_request_pathfilename iomp_count total_count
 */
 
 /* for example
-$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -n 1 -g pxplugin-http-fasterhttp.so -m "192.168.6.21 80 pxplugin-http.txt"  
+$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -n 1 -g pxplugin-http-fasterhttp-IOMP-IOMP.so -m "192.168.6.21 80 pxplugin-http.txt" 10 100
 */
 
 funcInitPxPlugin InitPxPlugin ;
@@ -30,7 +36,7 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	user_data = (struct PxPluginUserData *)malloc( sizeof(struct PxPluginUserData) ) ;
 	if( user_data == NULL )
 	{
-		printf( "pxplugin-http-fasterhttp | malloc PxPluginUserData failed , errno[%d]\n" , errno );
+		printf( "pxplugin-http-fasterhttp-IOMP | malloc PxPluginUserData failed , errno[%d]\n" , errno );
 		return -1;
 	}
 	memset( user_data , 0x00 , sizeof(struct PxPluginUserData) );
@@ -38,10 +44,10 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	user_data->netaddr.addr.sin_family = AF_INET ;
 	
 	memset( http_request_pathfilename , 0x00 , sizeof(http_request_pathfilename) );
-	sscanf( GetPxPluginRunParameterPtr(p_pxplugin_ctx) , "%s%d%s" , user_data->netaddr.ip , & (user_data->netaddr.port) , http_request_pathfilename );
-	if( user_data->netaddr.ip[0] == '\0' || user_data->netaddr.port <= 0 )
+	sscanf( GetPxPluginRunParameterPtr(p_pxplugin_ctx) , "%s%d%s%d%d" , user_data->netaddr.ip , & (user_data->netaddr.port) , http_request_pathfilename , & (user_data->iomp_count) , & (user_data->total_run_count) );
+	if( user_data->netaddr.ip[0] == '\0' || user_data->netaddr.port <= 0 || user_data->iomp_count <= 0 || user_data->total_run_count <= 0 )
 	{
-		printf( "pxplugin-http-fasterhttp | run parameter '%s' invalid for format '(ip) (port) (http_request_pathfilename)'\n" , GetPxPluginRunParameterPtr(p_pxplugin_ctx) );
+		printf( "pxplugin-http-fasterhttp-IOMP | run parameter '%s' invalid for format '(ip) (port) (http_request_pathfilename) (iomp_count) (total_count)'\n" , GetPxPluginRunParameterPtr(p_pxplugin_ctx) );
 		return -1;
 	}
 	
@@ -51,7 +57,7 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	nret = PXReadEntireFile( http_request_pathfilename , & (user_data->request) , & user_data->request_len ) ;
 	if( nret )
 	{
-		printf( "pxplugin-http-fasterhttp | PXReadEntireFile[%s] failed[%d] , errno[%d]\n" , http_request_pathfilename , nret , errno );
+		printf( "pxplugin-http-fasterhttp-IOMP | PXReadEntireFile[%s] failed[%d] , errno[%d]\n" , http_request_pathfilename , nret , errno );
 		return -1;
 	}
 	
@@ -99,6 +105,9 @@ funcRunPxPlugin RunPxPlugin ;
 int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 {
 	struct PxPluginUserData	*user_data = NULL ;
+	int			run_count ;
+	int			run_iomp_count ;
+	struct PxIompSession	*s = NULL ;
 	struct HttpBuffer	*b = NULL ;
 	int			status_code ;
 	
@@ -106,30 +115,66 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	
 	user_data = GetPxPluginUserData( p_pxplugin_ctx ) ;
 	
-	if( user_data->netaddr.sock == -1 )
+	run_count = 0 ;
+	run_iomp_count = 0 ;
+	while( ! ( run_count == user_data->total_run_count && run_iomp_count == 0 ) )
 	{
-		user_data->netaddr.sock = socket( AF_INET , SOCK_STREAM , IPPROTO_TCP ) ;
-		if( user_data->netaddr.sock == -1 )
+		if( run_count < user_data->total_run_count )
 		{
-			printf( "*** ERROR : socket failed , errno[%d]\n" , errno );
-			return -1;
-		}
-		
-		SETNETADDRESS( user_data->netaddr )
-		nret = connect( user_data->netaddr.sock , (struct sockaddr *) & (user_data->netaddr.addr) , sizeof(struct sockaddr) ) ;
-		if( nret == -1 )
-		{
-			printf( "*** ERROR : connect[%s:%d] failed , errno[%d]\n" , user_data->netaddr.ip , user_data->netaddr.port , errno );
-			close( user_data->netaddr.sock ); user_data->netaddr.sock = -1 ;
-			return -1;
-		}
-		else
-		{
-			if( user_data->output_flag == 0 )
+			while( run_iomp_count < user_data->iomp_count )
 			{
-				printf( "connect[%s:%d] ok\n" , user_data->netaddr.ip , user_data->netaddr.port );
+				s = (struct PxIompSession *)malloc( sizeof(struct PxIompSession) ) ;
+				if( s == NULL )
+				{
+					printf( "*** ERROR : malloc failed , errno[%d]\n" , errno );
+					return -1;
+				}
+				memset( s , 0x00 , sizeof(struct PxIompSession) );
+				
+				s->netaddr.sock = socket( AF_INET , SOCK_STREAM , IPPROTO_TCP ) ;
+				if( s->netaddr.sock == -1 )
+				{
+					printf( "*** ERROR : socket failed , errno[%d]\n" , errno );
+					return -1;
+				}
+				
+				SETNETADDRESS( s->netaddr )
+				nret = connect( s->netaddr.sock , (struct sockaddr *) & (s->netaddr.addr) , sizeof(struct sockaddr) ) ;
+				if( nret == -1 )
+				{
+					printf( "*** ERROR : connect[%s:%d] failed , errno[%d]\n" , s->netaddr.ip , s->netaddr.port , errno );
+					close( s->netaddr.sock ); s->netaddr.sock = -1 ;
+					return -1;
+				}
+				else
+				{
+					if( user_data->output_flag == 0 )
+					{
+						printf( "connect[%s:%d] ok\n" , s->netaddr.ip , s->netaddr.port );
+						user_data->output_flag = 1 ;
+					}
+				}
+				
+				
+				
+				
+				
 			}
 		}
+		
+		
+		
+		
+		
+	}
+	
+	
+	
+	
+	
+	
+	if( user_data->netaddr.sock == -1 )
+	{
 	}
 	
 	ResetHttpEnv( user_data->http_env );

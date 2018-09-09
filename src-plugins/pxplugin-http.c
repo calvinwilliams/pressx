@@ -12,36 +12,12 @@ struct PxPluginUserData
 	unsigned char		keep_alive ;
 } ;
 
-/* run parameter for GET method
+/* run parameter
 ip port http_request_pathfilename
-GET (uri) HTTP/1.1
-[ request-headers ]
-
 */
 
 /* for example
-$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 --process-count 1 --thread-count 1 --run-count 1 --run-plugin pxplugin-request.so --run-parameter "192.168.6.21:80
-GET / HTTP/1.1
-User-Agent: Mozilla/4.0
-Host: localhost
-
-"
-*/
-
-/* run parameter for POST method
-ip:port
-POST (uri) HTTP/1.1
-[ request-headers ]
-
-[ post data ]
-*/
-
-/* run parameter for GET method and keep-alive
-ip:port
-GET (uri) HTTP/1.1
-[ request-headers ]
-Connection: Keep-Alive
-
+$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -n 1 -g pxplugin-http.so -m "192.168.6.21 80 pxplugin-http.txt"  
 */
 
 #define CONTENT_LENGTH		"Content-length: "
@@ -68,7 +44,7 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	sscanf( GetPxPluginRunParameterPtr(p_pxplugin_ctx) , "%s%d%s" , user_data->netaddr.ip , & (user_data->netaddr.port) , http_request_pathfilename );
 	if( user_data->netaddr.ip[0] == '\0' || user_data->netaddr.port <= 0 )
 	{
-		printf( "pxplugin-http | run parameter '%s' invalid for format '(ip):(port)'\n" , GetPxPluginRunParameterPtr(p_pxplugin_ctx) );
+		printf( "pxplugin-http | run parameter '%s' invalid for format '(ip) (port) (http_request_pathfilename)'\n" , GetPxPluginRunParameterPtr(p_pxplugin_ctx) );
 		return -1;
 	}
 	
