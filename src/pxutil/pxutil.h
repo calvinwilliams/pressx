@@ -161,6 +161,8 @@ char *GetUsernamePtr();
 int writen( int sock , char *send_buffer , int send_len , int *p_sent_len );
 int readn( int sock , char *recv_buffer , int recv_len , int *p_received_len );
 
+int PXReadEntireFile( char *pathfilename , char **pp_file_buffer , int *p_file_size );
+
 #define PRESSX_MAXLEN_USER_NAME		64
 
 struct PxRegisteMessage

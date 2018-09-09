@@ -13,7 +13,7 @@ struct PxPluginUserData
 } ;
 
 /* run parameter for GET method
-ip:port
+ip port http_request_pathfilename
 GET (uri) HTTP/1.1
 [ request-headers ]
 
@@ -50,7 +50,7 @@ funcInitPxPlugin InitPxPlugin ;
 int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 {
 	struct PxPluginUserData	*user_data = NULL ;
-	char			*request = NULL ;
+	char			http_request_pathfilename[ PATH_MAX ] ;
 	
 	int			nret = 0 ;
 	
@@ -64,29 +64,23 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	
 	user_data->netaddr.addr.sin_family = AF_INET ;
 	
-	sscanf( GetPxPluginRunParameterPtr(p_pxplugin_ctx) , "%[^:]:%d" , user_data->netaddr.ip , & (user_data->netaddr.port) );
+	memset( http_request_pathfilename , 0x00 , sizeof(http_request_pathfilename) );
+	sscanf( GetPxPluginRunParameterPtr(p_pxplugin_ctx) , "%s%d%s" , user_data->netaddr.ip , & (user_data->netaddr.port) , http_request_pathfilename );
 	if( user_data->netaddr.ip[0] == '\0' || user_data->netaddr.port <= 0 )
 	{
-		printf( "pxplugin-tcp-connect | run parameter '%s' invalid for format '(ip):(port)'\n" , GetPxPluginRunParameterPtr(p_pxplugin_ctx) );
+		printf( "pxplugin-http | run parameter '%s' invalid for format '(ip):(port)'\n" , GetPxPluginRunParameterPtr(p_pxplugin_ctx) );
 		return -1;
 	}
 	
 	user_data->netaddr.addr.sin_addr.s_addr = inet_addr(user_data->netaddr.ip) ;
 	user_data->netaddr.addr.sin_port = htons( (unsigned short)user_data->netaddr.port );
 	
-	request = strchr( GetPxPluginRunParameterPtr(p_pxplugin_ctx) , '\n' ) ;
-	if( request[0] == '\0' )
+	nret = PXReadEntireFile( http_request_pathfilename , & (user_data->request) , & user_data->request_len ) ;
+	if( nret )
 	{
-		printf( "pxplugin-request | expect 'request' in run parameter\n" );
+		printf( "pxplugin-http | PXReadEntireFile failed[%d] , errno[%d]\n" , nret , errno );
 		return -1;
 	}
-	user_data->request = strdup( request ) ;
-	if( user_data->request == NULL )
-	{
-		printf( "pxplugin-request | strdup failed , errno[%d]\n" , errno );
-		return -1;
-	}
-	user_data->request_len = strlen(user_data->request) ;
 	
 	user_data->http_1_0 = STRISTR( user_data->request , "HTTP/1.0" ) ;
 	user_data->http_1_1 = STRISTR( user_data->request , "HTTP/1.1" ) ;

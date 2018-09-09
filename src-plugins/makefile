@@ -8,15 +8,18 @@
 ###### 源文件配置区
 #@ c_FILE
 c_FILE		=	\
+			pxplugin-ib2.c \
 			pxplugin-tcp-connect.c \
 			pxplugin-http.c \
-			pxplugin-ib2.c \
+			fasterhttp.c \
+			pxplugin-http-fasterhttp.c \
 
 ###### 目标文件、安装目录配置区
 include makeinstall
 LIB		=	\
 			pxplugin-tcp-connect.so \
 			pxplugin-http.so \
+			pxplugin-http-fasterhttp.so \
 
 LIBINST		=	$(HOME)/so
 
@@ -60,12 +63,6 @@ PREMAKE		=
 include $(MKTPL2_HOME)/makeobj_$(MKTPL2_OS).inc
 
 ###### 目标文件依赖关系
-pxplugin-tcp-connect.so	:	pxplugin-tcp-connect.o
-	$(CC) -o $@ pxplugin-tcp-connect.o $(SOFLAGS) $(LFLAGS)
-
-pxplugin-http.so	:	pxplugin-http.o
-	$(CC) -o $@ pxplugin-http.o $(SOFLAGS) $(LFLAGS)
-
 pxplugin-ib2.o	:	pxplugin-ib2.c
 	$(CC) $(CFLAGS_IB2) -c pxplugin-ib2.c
 
@@ -85,4 +82,13 @@ pxplugin-ib2_install	:	pxplugin-ib2.so
 		echo $(CP) pxplugin-ib2.so $(LIBINST)/ ; \
 		$(CP) pxplugin-ib2.so $(LIBINST)/ ; \
 	done
+
+pxplugin-tcp-connect.so	:	pxplugin-tcp-connect.o
+	$(CC) -o $@ pxplugin-tcp-connect.o $(SOFLAGS) $(LFLAGS)
+
+pxplugin-http.so	:	pxplugin-http.o
+	$(CC) -o $@ pxplugin-http.o $(SOFLAGS) $(LFLAGS)
+
+pxplugin-http-fasterhttp.so	:	pxplugin-http-fasterhttp.o fasterhttp.o
+	$(CC) -o $@ pxplugin-http-fasterhttp.o fasterhttp.o $(SOFLAGS) $(LFLAGS)
 

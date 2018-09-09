@@ -6,11 +6,11 @@ char	*_PXMANAGER_VERSION = _PXMANAGER_VERSION_0_2_1 ;
 static void usage()
 {
 	printf( "USAGE : manager --listen-ip (ip) --listen-port (port)\n" );
-	printf( "                  [ --process-count (count) ]\n" );
-	printf( "                  [ --thread-count (count) ]\n" );
-	printf( "                  [ --run-count (count) ]\n" );
-	printf( "                  --run-plugin (filename)\n" );
-	printf( "                  [ --run-parameter (cmd) ]\n" );
+	printf( "                  [ [-p|--process-count] (count) ]\n" );
+	printf( "                  [ [-t|--thread-count] (count) ]\n" );
+	printf( "                  [ [-n|--run-count] (count) ]\n" );
+	printf( "                  [ [-g|--run-plugin] (filename)\n" );
+	printf( "                  [ [-m|--run-parameter] (cmd) ]\n" );
 	return;
 }
 
@@ -48,23 +48,23 @@ int main( int argc , char *argv[] )
 		{
 			p_manager->listen_session.netaddr.port = atoi(argv[++i]) ;
 		}
-		else if( strcmp( argv[i] , "--process-count" ) == 0 && i + 1 < argc )
+		else if( ( strcmp( argv[i] , "-p" ) == 0 || strcmp( argv[i] , "--process-count" ) == 0 ) && i + 1 < argc )
 		{
 			p_manager->process_count = atoi(argv[++i]) ;
 		}
-		else if( strcmp( argv[i] , "--thread-count" ) == 0 && i + 1 < argc )
+		else if( ( strcmp( argv[i] , "-t" ) == 0 || strcmp( argv[i] , "--thread-count" ) == 0 ) && i + 1 < argc )
 		{
 			p_manager->thread_count = atoi(argv[++i]) ;
 		}
-		else if( strcmp( argv[i] , "--run-count" ) == 0 && i + 1 < argc )
+		else if( ( strcmp( argv[i] , "-n" ) == 0 || strcmp( argv[i] , "--run-count" ) == 0 ) && i + 1 < argc )
 		{
 			p_manager->run_count = atoi(argv[++i]) ;
 		}
-		else if( strcmp( argv[i] , "--run-plugin" ) == 0 && i + 1 < argc )
+		else if( ( strcmp( argv[i] , "-g" ) == 0 || strcmp( argv[i] , "--run-plugin" ) == 0 ) && i + 1 < argc )
 		{
 			strncpy( p_manager->run_plugin , argv[++i] , sizeof(p_manager->run_plugin)-1 );
 		}
-		else if( strcmp( argv[i] , "--run-parameter" ) == 0 && i + 1 < argc )
+		else if( ( strcmp( argv[i] , "-m" ) == 0 || strcmp( argv[i] , "--run-parameter" ) == 0 ) && i + 1 < argc )
 		{
 			strncpy( p_manager->run_parameter , argv[++i] , sizeof(p_manager->run_parameter)-1 );
 		}

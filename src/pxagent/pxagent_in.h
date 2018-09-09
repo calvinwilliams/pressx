@@ -14,6 +14,8 @@ struct PxConnectedSession
 struct PxPluginContext
 {
 	struct PxAgent			*p_agent ;
+	unsigned int			process_index ;
+	unsigned int			thread_index ;
 	struct PxPerformanceStatMessage	*perf_stat ;
 	void				*user_data ;
 } ;
