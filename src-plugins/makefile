@@ -21,6 +21,7 @@ LIB		=	\
 			pxplugin-tcp-connect.so \
 			pxplugin-http.so \
 			pxplugin-http-fasterhttp.so \
+			pxplugin-http-fasterhttp-IOMP.so \
 
 #			pxplugin-http-fasterhttp-IOMP.so \
 

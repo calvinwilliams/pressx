@@ -164,7 +164,7 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	status_code = GetHttpStatusCode(user_data->http_env) ;
 	if( status_code != HTTP_OK )
 	{
-		printf( "*** ERROR : request status code [%03d]\n" , status_code );
+		printf( "*** ERROR : response status code [%03d]\n" , status_code );
 		close( user_data->netaddr.sock ); user_data->netaddr.sock = -1 ;
 		return -1;
 	}
