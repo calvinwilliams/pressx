@@ -184,6 +184,7 @@ struct PxRunPressingMessage
 
 struct PxPerformanceStatMessage
 {
+	unsigned int	run_count ;
 	struct timeval	run_timeval ;
 	struct timeval	min_delay_timeval ;
 	struct timeval	max_delay_timeval ;

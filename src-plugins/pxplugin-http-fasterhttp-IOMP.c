@@ -4,6 +4,16 @@
 
 #include "fasterhttp.h"
 
+struct PxIompSession
+{
+	unsigned int		iomp_index ;
+	struct NetAddress	netaddr ;
+	struct HttpEnv		*http_env ;
+	unsigned char		request_or_response_flag ;
+	struct timeval		begin_delay_timeval ;
+	struct timeval		end_delay_timeval ;
+} ;
+
 struct PxPluginUserData
 {
 	struct NetAddress	netaddr ;
@@ -17,14 +27,6 @@ struct PxPluginUserData
 	int			epoll_fd ;
 } ;
 
-struct PxIompSession
-{
-	unsigned int		iomp_index ;
-	struct NetAddress	netaddr ;
-	struct HttpEnv		*http_env ;
-	unsigned char		request_or_response_flag ;
-} ;
-
 #define MAXCNT_EPOLL_EVENTS	1024
 
 /* run parameter
@@ -32,7 +34,8 @@ ip port http_request_pathfilename iomp_count total_count
 */
 
 /* for example
-$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -n 1 -g pxplugin-http-fasterhttp-IOMP-IOMP.so -m "192.168.6.21 80 pxplugin-http.txt 10 100"
+$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -n 1 -g pxplugin-http-fasterhttp-IOMP.so -m "192.168.6.21 80 pxplugin-http.txt 10 100"
+$ pxagent --connect-ip 192.168.6.21 --connect-port 9527
 */
 
 funcInitPxPlugin InitPxPlugin ;
@@ -124,10 +127,12 @@ static int ConnectToServer( struct PxPluginUserData *user_data , struct PxIompSe
 	return 0;
 }
 
-funcRunPxPlugin RunPxPlugin ;
-int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
+funcRawRunPxPlugin RawRunPxPlugin ;
+int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 {
 	struct PxPluginUserData	*user_data = NULL ;
+	struct timeval		begin_run_timeval ;
+	struct timeval		end_run_timeval ;
 	int			run_count ;
 	int			run_iomp_count ;
 	struct PxIompSession	*s = NULL ;
@@ -142,6 +147,8 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	int			nret = 0 ;
 	
 	user_data = GetPxPluginUserData( p_pxplugin_ctx ) ;
+	
+	gettimeofday( & begin_run_timeval , NULL );
 	
 	run_count = 0 ;
 	run_iomp_count = 0 ;
@@ -190,6 +197,8 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 			{
 				printf( "HTTP REQUEST[%.*s]\n" , GetHttpBufferLength(b) , GetHttpBufferBase(b,NULL) );
 			}
+			
+			gettimeofday( & (s->begin_delay_timeval) , NULL );
 			
 			memset( & event , 0x00 , sizeof(struct epoll_event) );
 			event.events = EPOLLOUT | EPOLLERR | EPOLLHUP | EPOLLRDHUP ;
@@ -297,6 +306,9 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 						return -1;
 					}
 					
+					gettimeofday( & (s->end_delay_timeval) , NULL );
+					SetPxPluginDelayTimeval( p_pxplugin_ctx , & (s->begin_delay_timeval) , & (s->end_delay_timeval) );
+					
 					user_data->output_flag = 0 ;
 					
 					if( run_count + run_iomp_count < user_data->total_run_count )
@@ -326,6 +338,8 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 							printf( "*** ERROR : StrcatHttpBuffer failed , errno[%d]\n" , errno );
 							return -1;
 						}
+						
+						gettimeofday( & (s->begin_delay_timeval) , NULL );
 						
 						memset( & event , 0x00 , sizeof(struct epoll_event) );
 						event.events = EPOLLOUT | EPOLLERR | EPOLLHUP | EPOLLRDHUP ;
@@ -365,7 +379,11 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 			}
 		}
 	}
-	printf( "run_iomp_count[%d] run_count[%d] user_data->total_run_count[%d]\n" , run_iomp_count , run_count , user_data->total_run_count );
+	
+	gettimeofday( & end_run_timeval , NULL );
+	SetPxPluginRunTimeval( p_pxplugin_ctx , & begin_run_timeval , & end_run_timeval );
+	
+	SetPxPluginRunCount( p_pxplugin_ctx , run_count );
 	
 	return 0;
 }
