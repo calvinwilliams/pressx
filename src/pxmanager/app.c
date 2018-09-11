@@ -149,12 +149,12 @@ int app_RunPressing( struct PxManager *p_manager )
 				return 0;
 			}
 			
-			printf( "run_count[%u] run_timeval[%ld.%06ld] min_delay_timeval[%ld.%06ld] max_delay_timeval[%ld.%06ld]\n" , p_manager->run_count , perf_stat.run_timeval.tv_sec,perf_stat.run_timeval.tv_usec , perf_stat.min_delay_timeval.tv_sec,perf_stat.min_delay_timeval.tv_usec , perf_stat.max_delay_timeval.tv_sec,perf_stat.max_delay_timeval.tv_usec );
+			printf( "run_count[%u] run_timeval[%ld.%06ld] min_delay_timeval[%ld.%06ld] max_delay_timeval[%ld.%06ld]\n" , perf_stat.run_count , perf_stat.run_timeval.tv_sec,perf_stat.run_timeval.tv_usec , perf_stat.min_delay_timeval.tv_sec,perf_stat.min_delay_timeval.tv_usec , perf_stat.max_delay_timeval.tv_sec,perf_stat.max_delay_timeval.tv_usec );
 			
-			total_run_count += p_manager->run_count ;
+			total_run_count += perf_stat.run_count ;
 			run_timeval = (double)(perf_stat.run_timeval.tv_sec) + ((double)(perf_stat.run_timeval.tv_usec))/1000000 ;
 			total_run_timeval += run_timeval ;
-			total_tps += ( p_manager->run_count / run_timeval ) ;
+			total_tps += ( perf_stat.run_count / run_timeval ) ;
 			MIN_VAL_TIMEVAL( min_delay_timeval , perf_stat.min_delay_timeval )
 			MAX_VAL_TIMEVAL( max_delay_timeval , perf_stat.max_delay_timeval )
 		}
@@ -172,7 +172,7 @@ int app_RunPressing( struct PxManager *p_manager )
 	printf( "        total run count : %u\n" , total_run_count );
 	printf( "        avg run timeval : %.6lf (s)\n" , avg_run_timeval );
 	printf( "      min delay timeval : %ld.%06ld (s)\n" , min_delay_timeval.tv_sec , min_delay_timeval.tv_usec );
-	printf( "      avg delay timeval : %.6lf (s)\n" , avg_run_timeval / p_manager->run_count );
+	printf( "      avg delay timeval : %.6lf (s)\n" , total_run_timeval / total_run_count );
 	printf( "      max delay timeval : %ld.%06ld (s)\n" , max_delay_timeval.tv_sec , max_delay_timeval.tv_usec );
 	printf( "transactions per second : %.0lf\n" , total_tps );
 	printf( "\n" );

@@ -28,6 +28,7 @@ struct PxAgent
 	void				*so_handler ;
 	funcInitPxPlugin		*pfuncInitPxPlugin ;
 	funcRunPxPlugin			*pfuncRunPxPlugin ;
+	funcRunPxPlugin			*pfuncRawRunPxPlugin ;
 	funcCleanPxPlugin		*pfuncCleanPxPlugin ;
 	struct PxPerformanceStatMessage	*perf_stat_base ;
 } ;

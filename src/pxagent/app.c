@@ -39,9 +39,10 @@ int app_LoadPlugin( struct PxAgent *p_agent )
 	}
 	
 	p_agent->pfuncRunPxPlugin = (funcRunPxPlugin *)dlsym( p_agent->so_handler , "RunPxPlugin" ) ;
-	if( p_agent->pfuncRunPxPlugin == NULL )
+	p_agent->pfuncRawRunPxPlugin = (funcRawRunPxPlugin *)dlsym( p_agent->so_handler , "RawRunPxPlugin" ) ;
+	if( p_agent->pfuncRunPxPlugin == NULL && p_agent->pfuncRawRunPxPlugin == NULL )
 	{
-		printf( "*** ERROR : dlsym[%s][%s] failed , errno[%d] dlerror[%s]\n" , plugin_pathfilename , "RunPxPlugin" , errno , dlerror() );
+		printf( "*** ERROR : dlsym[%s][%s or %s] failed , errno[%d] dlerror[%s]\n" , plugin_pathfilename , "RunPxPlugin" , "RawRunPxPlugin" , errno , dlerror() );
 		return -1;
 	}
 	
@@ -231,47 +232,63 @@ void *app_ThreadEntry( void *p )
 		return NULL;
 	}
 	
-	gettimeofday( & tv1 , NULL );
-	
-	run_count = p_pxplugin_ctx->p_agent->run_pressing.run_count ;
-	perf_stat = p_pxplugin_ctx->perf_stat ;
-	run_one_over_ten = run_count / 10 ;
-	for( run_index = 0 ; run_index < run_count ; )
+	if( p_pxplugin_ctx->p_agent->pfuncRawRunPxPlugin )
 	{
-		gettimeofday( & tv2 , NULL );
+		p_pxplugin_ctx->perf_stat->min_delay_timeval.tv_sec = LONG_MAX ;
+		p_pxplugin_ctx->perf_stat->min_delay_timeval.tv_usec = LONG_MAX ;
 		
-		nret = p_pxplugin_ctx->p_agent->pfuncRunPxPlugin( p_pxplugin_ctx ) ;
+		nret = p_pxplugin_ctx->p_agent->pfuncRawRunPxPlugin( p_pxplugin_ctx ) ;
 		if( nret )
 		{
-			printf( "pfuncRunPxPlugin failed[%d]\n" , nret );
+			printf( "pfuncRawRunPxPlugin failed[%d]\n" , nret );
 			return NULL;
 		}
+	}
+	else
+	{
+		gettimeofday( & tv1 , NULL );
 		
-		gettimeofday( & tv3 , NULL );
-		DIFF_TIMEVAL( tv_diff , tv2 , tv3 )
-		if( run_index == 0 )
+		run_count = p_pxplugin_ctx->p_agent->run_pressing.run_count ;
+		perf_stat = p_pxplugin_ctx->perf_stat ;
+		run_one_over_ten = run_count / 10 ;
+		for( run_index = 0 ; run_index < run_count ; )
 		{
-			VAL_TIMEVAL( perf_stat->min_delay_timeval , tv_diff )
-			VAL_TIMEVAL( perf_stat->max_delay_timeval , tv_diff )
-		}
-		else
-		{
-			MIN_VAL_TIMEVAL( perf_stat->min_delay_timeval , tv_diff )
-			MAX_VAL_TIMEVAL( perf_stat->max_delay_timeval , tv_diff )
-		}
-		
-		run_index++;
-		if( p_pxplugin_ctx->process_index == 0 && p_pxplugin_ctx->thread_index == 0 )
-		{
-			if( run_one_over_ten > 0 && run_index % run_one_over_ten == 0 )
+			gettimeofday( & tv2 , NULL );
+			
+			nret = p_pxplugin_ctx->p_agent->pfuncRunPxPlugin( p_pxplugin_ctx ) ;
+			if( nret )
 			{
-				printf( "[%u/%u] Finished\n" , run_index , run_count ); fflush(stdout);
+				printf( "pfuncRunPxPlugin failed[%d]\n" , nret );
+				return NULL;
+			}
+			
+			gettimeofday( & tv3 , NULL );
+			DIFF_TIMEVAL( tv_diff , tv2 , tv3 )
+			if( run_index == 0 )
+			{
+				VAL_TIMEVAL( perf_stat->min_delay_timeval , tv_diff )
+				VAL_TIMEVAL( perf_stat->max_delay_timeval , tv_diff )
+			}
+			else
+			{
+				MIN_VAL_TIMEVAL( perf_stat->min_delay_timeval , tv_diff )
+				MAX_VAL_TIMEVAL( perf_stat->max_delay_timeval , tv_diff )
+			}
+			
+			run_index++;
+			if( p_pxplugin_ctx->process_index == 0 && p_pxplugin_ctx->thread_index == 0 )
+			{
+				if( run_one_over_ten > 0 && run_index % run_one_over_ten == 0 )
+				{
+					printf( "[%u/%u] Finished\n" , run_index , run_count ); fflush(stdout);
+				}
 			}
 		}
+		
+		gettimeofday( & tv4 , NULL );
+		DIFF_TIMEVAL( perf_stat->run_timeval , tv1 , tv4 )
+		
 	}
-	
-	gettimeofday( & tv4 , NULL );
-	DIFF_TIMEVAL( perf_stat->run_timeval , tv1 , tv4 )
 	
 	nret = p_pxplugin_ctx->p_agent->pfuncCleanPxPlugin( p_pxplugin_ctx ) ;
 	if( nret )
