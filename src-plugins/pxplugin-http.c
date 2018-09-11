@@ -186,7 +186,7 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	sscanf( response_buffer , "%*s%d" , & status_code );
 	if( status_code != 200 )
 	{
-		printf( "*** ERROR : request status code [%03d]\n" , status_code );
+		printf( "*** ERROR : response status code [%03d]\n" , status_code );
 		return -1;
 	}
 	
