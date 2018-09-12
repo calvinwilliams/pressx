@@ -166,11 +166,11 @@ int PXReadEntireFile( char *pathfilename , char **pp_file_buffer , int *p_file_s
 
 struct PxMessageTemplate ;
 
-struct PxCreateMessageTemplate *PXInitMessageTemplate();
+struct PxMessageTemplate *PXCreateMessageTemplate();
 int PXLoadTestData( struct PxMessageTemplate *msg_tpl , char *test_data_pathfilename );
 int PXLoadMessageTemplate( struct PxMessageTemplate *msg_tpl , char *msg_tpl_pathfilename );
 int PXInstaceMessageByRandom( struct PxMessageTemplate *msg_tpl );
-char *PXGetMessagePtr( struct PxMessageTemplate *msg_tpl , int *p_msg_len );
+char *PXGetMessagePtr( struct PxMessageTemplate *msg_tpl , int *p_msg_ins_len );
 void PXDestroyMessageTemplate( struct PxMessageTemplate *msg_tpl );
 
 #define PRESSX_MAXLEN_USER_NAME		64

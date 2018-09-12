@@ -13,8 +13,7 @@ c_FILE		=	\
 			os.c \
 			socket.c \
 			file.c \
-
-#			msg_tpl.c \
+			msg_tpl.c \
 
 ###### 目标文件、安装目录配置区
 include makeinstall
@@ -25,6 +24,8 @@ HDER		= \
 			pxutil.h \
 
 HDERINST	=	$(_HDERINST)/pressx
+
+NOINST_OBJ	=	test
 
 ###### 编译选项
 CFLAGS		=	$(_CFLAGS) \
@@ -53,4 +54,7 @@ include $(MKTPL2_HOME)/makeobj_$(MKTPL2_OS).inc
 ###### 目标文件依赖关系
 libpxutil.so		:	$(c_FILE_o)
 	$(CC) -o $@ $(c_FILE_o) $(SOFLAGS) $(LFLAGS)
+
+test			:	test.o libpxutil.so
+	$(CC) -o $@ $(ESOFLAGS) test.o libpxutil.so $(LFLAGS)
 
