@@ -17,6 +17,7 @@
 #include <sys/wait.h>
 #include <values.h>
 #include <dlfcn.h>
+#include <time.h>
 
 char *strcasestr(const char *haystack, const char *needle);
 
@@ -162,6 +163,15 @@ int writen( int sock , char *send_buffer , int send_len , int *p_sent_len );
 int readn( int sock , char *recv_buffer , int recv_len , int *p_received_len );
 
 int PXReadEntireFile( char *pathfilename , char **pp_file_buffer , int *p_file_size );
+
+struct PxMessageTemplate ;
+
+struct PxCreateMessageTemplate *PXInitMessageTemplate();
+int PXLoadTestData( struct PxMessageTemplate *msg_tpl , char *test_data_pathfilename );
+int PXLoadMessageTemplate( struct PxMessageTemplate *msg_tpl , char *msg_tpl_pathfilename );
+int PXInstaceMessageByRandom( struct PxMessageTemplate *msg_tpl );
+char *PXGetMessagePtr( struct PxMessageTemplate *msg_tpl , int *p_msg_len );
+void PXDestroyMessageTemplate( struct PxMessageTemplate *msg_tpl );
 
 #define PRESSX_MAXLEN_USER_NAME		64
 

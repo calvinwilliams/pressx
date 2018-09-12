@@ -53,7 +53,7 @@ LFLAGS_IB2	=	$(LFLAGS) \
 			-lhzb_log \
 
 ###### 额外宏定义区
-CLEAN_ADDITION	=
+CLEAN_ADDITION	=	pxplugin-ib2.so
 
 PREMAKE		=
 
