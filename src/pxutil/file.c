@@ -8,7 +8,7 @@ int PXReadEntireFile( char *pathfilename , char **pp_file_buffer , int *p_file_s
 	
 	int		nret = 0 ;
 	
-	fp = fopen( pathfilename , "r" ) ;
+	fp = fopen( pathfilename , "rb" ) ;
 	if( fp == NULL )
 	{
 		return -1;

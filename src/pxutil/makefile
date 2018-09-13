@@ -25,7 +25,7 @@ HDER		= \
 
 HDERINST	=	$(_HDERINST)/pressx
 
-NOINST_OBJ	=	test
+NOINST_OBJ	=	test_msg_tpl
 
 ###### 编译选项
 CFLAGS		=	$(_CFLAGS) \
@@ -34,7 +34,7 @@ CFLAGS		=	$(_CFLAGS) \
 LFLAGS		=	$(_LFLAGS) \
 
 ###### 额外宏定义区
-CLEAN_ADDITION	=
+CLEAN_ADDITION	=	test_msg_tpl.o
 
 PREMAKE		=
 
@@ -55,6 +55,6 @@ include $(MKTPL2_HOME)/makeobj_$(MKTPL2_OS).inc
 libpxutil.so		:	$(c_FILE_o)
 	$(CC) -o $@ $(c_FILE_o) $(SOFLAGS) $(LFLAGS)
 
-test			:	test.o libpxutil.so
-	$(CC) -o $@ $(ESOFLAGS) test.o libpxutil.so $(LFLAGS)
+test_msg_tpl		:	test_msg_tpl.o libpxutil.so
+	$(CC) -o $@ $(ESOFLAGS) test_msg_tpl.o libpxutil.so $(LFLAGS)
 

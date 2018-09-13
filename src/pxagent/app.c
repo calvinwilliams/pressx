@@ -288,6 +288,7 @@ void *app_ThreadEntry( void *p )
 		gettimeofday( & tv4 , NULL );
 		DIFF_TIMEVAL( perf_stat->run_timeval , tv1 , tv4 )
 		
+		perf_stat->run_count = p_pxplugin_ctx->p_agent->run_pressing.run_count ;
 	}
 	
 	nret = p_pxplugin_ctx->p_agent->pfuncCleanPxPlugin( p_pxplugin_ctx ) ;

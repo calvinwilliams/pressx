@@ -1,3 +1,7 @@
+0.5.0		2018-09-13	calvin
+		* 公函pxutil新增报文模板函数集msg_tpl
+		* 插件pxplugin-ib2.so支持报文模板替换机制
+
 0.4.0		2018-09-11	calvin
 		* pxagent新增裸回调函数，用于自行设置性能数据
 		* 新增插件src-plugins/pxplugin-http-fasterhttp-IOMP.so

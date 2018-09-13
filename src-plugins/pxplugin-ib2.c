@@ -3,23 +3,32 @@
 #include "ib2api.h"
 
 /* run parameter
-node app msg_pathfilename [ file_pathfilename [ file_pathfilename2 ] ]
+node app (msg_pathfilename | test_data_pathfilename:msg_tpl_pathfilename) [ file_pathfilename [ file_pathfilename2 ] ]
+*/
+
+/* for pxmanager
+$ pxmanager --listen-ip 66.88.1.61 --listen-port 9527 -p 1 -t 1 -g pxplugin-ib2.so -m "0000 ACC99999 pxplugin-ib2-ACC99999.test_data:pxplugin-ib2-ACC99999.msg_tpl" -n 1
+*/
+
+/* for pxagent
+$ pxagent --connect-ip 66.88.1.61 --connect-port 9527
 */
 
 struct PxPluginUserData
 {
-	struct IB2Env		*ib2_env ;
+	struct IB2Env			*ib2_env ;
 	
-	char			*node ;
-	char			*app ;
-	char			*msg_pathfilename ;
-	char			*file_pathfilename ;
-	char			*file_pathfilename2 ;
+	char				*node ;
+	char				*app ;
+	char				*msg_pathfilename ;
+	char				*test_data_pathfilename ;
+	char				*msg_tpl_pathfilename ;
+	char				*file_pathfilename ;
+	char				*file_pathfilename2 ;
 	
-	char			*msg_tpl ;
-	int			msg_tpl_len ;
-	char			*file_filename ;
-	char			*file_filename2 ;
+	struct PxMessageTemplate	*msg_tpl ;
+	char				*file_filename ;
+	char				*file_filename2 ;
 } ;
 
 funcInitPxPlugin InitPxPlugin ;
@@ -27,6 +36,7 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 {
 	struct PxPluginUserData	*user_data = NULL ;
 	char			*p = NULL ;
+	char			*p2 = NULL ;
 	char			file_filename[ IB2_MAXLEN_FILENAME + 1 ] ;
 	char			file_pathfilename[ IB2_MAXLEN_FILENAME + 1 ] ;
 	FILE			*fp = NULL ;
@@ -91,22 +101,27 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 		printf( "pxplugin-ib2 | expect 'msg_pathfilename' in run parameter\n" );
 		return -1;
 	}
-	user_data->msg_pathfilename = strdup(p) ;
-	if( user_data->msg_pathfilename == NULL )
+	p2 = strchr( p , ':' ) ;
+	if( p2 == NULL )
 	{
-		printf( "pxplugin-ib2 | strdup failed , errno[%d]\n" , errno );
-		return -1;
-	}
-	
-	nret = PXReadEntireFile( user_data->msg_pathfilename , & (user_data->msg_tpl) , & user_data->msg_tpl_len ) ;
-	if( nret )
-	{
-		printf( "pxplugin-ib2 | PXReadEntireFile[%s] failed[%d] , errno[%d]\n" , user_data->msg_pathfilename , nret , errno );
-		return -1;
+		user_data->msg_pathfilename = strdup(p) ;
+		user_data->msg_tpl = PXCompileTemplate( NULL , user_data->msg_pathfilename ) ;
+		if( user_data->msg_tpl == NULL )
+		{
+			printf( "pxplugin-ib2 | PXCompileTemplate[(null)][%s] failed[%s]\n" , user_data->msg_pathfilename , PXGetMessageTemplateErrorDesc() );
+			return -1;
+		}
 	}
 	else
 	{
-		printf( "pxplugin-ib2 | PXReadEntireFile[%s] ok , msg_tpl_len[%d]\n" , user_data->msg_pathfilename , user_data->msg_tpl_len );
+		user_data->test_data_pathfilename = strndup(p,p2-p) ;
+		user_data->msg_tpl_pathfilename = strdup(p2+1) ;
+		user_data->msg_tpl = PXCompileTemplate( user_data->test_data_pathfilename , user_data->msg_tpl_pathfilename ) ;
+		if( user_data->msg_tpl == NULL )
+		{
+			printf( "pxplugin-ib2 | PXCompileTemplate[%s][%s] failed[%s]\n" , user_data->test_data_pathfilename , user_data->msg_tpl_pathfilename , PXGetMessageTemplateErrorDesc() );
+			return -1;
+		}
 	}
 	
 	user_data->file_pathfilename = gettok( NULL , PRESSX_BLANK_DELIM ) ;
@@ -176,6 +191,8 @@ funcRunPxPlugin RunPxPlugin ;
 int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 {
 	struct PxPluginUserData	*user_data = NULL ;
+	char			*msg = NULL ;
+	int			msg_len ;
 	struct IB2PackageInfo	msg_info ;
 	struct IB2PackageInfo	file_info ;
 	struct COM_comm_confirm	comm_confirm ;
@@ -201,10 +218,17 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	}
 	*/
 	
+	msg = PXInstaceMessageByRandom( user_data->msg_tpl , & msg_len ) ;
+	if( msg == NULL )
+	{
+		printf( "pxplugin-ib2 | PXInstaceMessageByRandom failed[%s]\n" , PXGetMessageTemplateErrorDesc() );
+		return -1;
+	}
+	
 	memset( & msg_info , 0x00 , sizeof(struct IB2PackageInfo) );
 	strcpy( msg_info.struct_type , "IB2MSG_STRUCTTYPE" );
 	strcpy( msg_info.id , "IB2MSG_ID" );
-	nret = IB2AddMessage( user_data->ib2_env , & msg_info , user_data->msg_tpl , user_data->msg_tpl_len ) ;
+	nret = IB2AddMessage( user_data->ib2_env , & msg_info , msg , msg_len ) ;
 	if( nret )
 	{
 		printf( "pxplugin-ib2 | IB2AddMessage failed[%d]\n" , nret );
@@ -241,7 +265,7 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	nret = IB2SendRequest( user_data->ib2_env , user_data->app , 0 , & timeout , & comm_confirm ) ;
 	if( nret )
 	{
-		printf( "pxplugin-ib2 | IB2SendRequest failed[%d] , [%ld][%s]\n" , nret , comm_confirm.response_code , comm_confirm.response_desc );
+		printf( "pxplugin-ib2 | IB2SendRequest failed[%d] , [%ld][%s] , [%.*s]\n" , nret , comm_confirm.response_code , comm_confirm.response_desc , msg_len , msg );
 		return -1;
 	}
 	
@@ -249,7 +273,7 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	nret = IB2ReceiveResponse( user_data->ib2_env , & timeout , & comm_confirm ) ;
 	if( nret )
 	{
-		printf( "pxplugin-ib2 | IB2ReceiveResponse failed[%d] , [%ld][%s]\n" , nret , comm_confirm.response_code , comm_confirm.response_desc );
+		printf( "pxplugin-ib2 | IB2ReceiveResponse failed[%d] , [%ld][%s] , [%.*s]\n" , nret , comm_confirm.response_code , comm_confirm.response_desc , msg_len , msg );
 		return -1;
 	}
 	
@@ -273,13 +297,16 @@ int CleanPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 		free( user_data->app );
 	if( user_data->msg_pathfilename )
 		free( user_data->msg_pathfilename );
+	if( user_data->test_data_pathfilename )
+		free( user_data->test_data_pathfilename );
+	if( user_data->msg_tpl_pathfilename )
+		free( user_data->msg_tpl_pathfilename );
 	if( user_data->file_pathfilename )
 		free( user_data->file_pathfilename );
 	if( user_data->file_pathfilename2 )
 		free( user_data->file_pathfilename2 );
 	
-	if( user_data->msg_tpl )
-		free( user_data->msg_tpl );
+	PXFreeMessageTemplate( user_data->msg_tpl );
 	if( user_data->file_filename )
 		free( user_data->file_filename );
 	if( user_data->file_filename2 )
