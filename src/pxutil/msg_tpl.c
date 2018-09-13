@@ -1,6 +1,9 @@
 #include "pxutil.h"
 
-#define _DEBUG			0
+#define _DEBUG				0
+
+#define TEST_DATA_ROW_SIZE_INIT		2
+#define TEST_DATA_ROW_SIZE_INCREASE	2
 
 struct PxSubstrLocator
 {
@@ -31,6 +34,8 @@ struct PxMessageTemplate
 	int			msg_ins_bufsize ;
 	int			msg_ins_len ;
 } ;
+
+static char	_g_message_template_error_desc[ 256 ] = "" ;	
 
 static void _PXFreeTestFieldAndData( struct PxMessageTemplate *msg_tpl )
 {
@@ -117,11 +122,15 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 	{
 		fp = fopen( test_data_pathfilename , "r" ) ;
 		if( fp == NULL )
+		{
+			snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "fopen[%s] failed , errno[%d]" , test_data_pathfilename , errno );
 			return NULL;
+		}
 		
 		memset( file_buffer , 0x00 , sizeof(file_buffer) );
 		if( fgets( file_buffer , sizeof(file_buffer) , fp ) == NULL )
 		{
+			snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "fgets[%s] for test_data_column_count failed" , test_data_pathfilename );
 			fclose( fp );
 			return NULL;
 		}
@@ -129,17 +138,19 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 		msg_tpl->test_data_column_count = atoi(file_buffer) ;
 		if( msg_tpl->test_data_column_count <= 0 )
 		{
+			snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "test_data_column_count[%d] invalid" , msg_tpl->test_data_column_count );
 			fclose( fp );
 			return NULL;
 		}
 		
 #if _DEBUG
-		printf( "DEBUG - msg_tpl->test_data_column_count[%d]\n" , msg_tpl->test_data_column_count );
+		printf( "DEBUG - 111 - msg_tpl->test_data_column_count[%d]\n" , msg_tpl->test_data_column_count );
 #endif
 		
 		msg_tpl->test_field = (char **)malloc( sizeof(char*)*msg_tpl->test_data_column_count ) ;
 		if( msg_tpl->test_field == NULL )
 		{
+			snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "malloc failed , errno[%d]" , errno );
 			fclose( fp );
 			return NULL;
 		}
@@ -148,6 +159,7 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 		msg_tpl->test_field_len = (int *)malloc( sizeof(int)*msg_tpl->test_data_column_count ) ;
 		if( msg_tpl->test_field_len == NULL )
 		{
+			snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "malloc failed , errno[%d]" , errno );
 			fclose( fp );
 			return NULL;
 		}
@@ -156,6 +168,7 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 		memset( file_buffer , 0x00 , sizeof(file_buffer) );
 		if( fgets( file_buffer , sizeof(file_buffer) , fp ) == NULL )
 		{
+			snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "fgets[%s] for column name list failed" , test_data_pathfilename );
 			_PXFreeTestFieldAndData( msg_tpl );
 			fclose( fp );
 			return NULL;
@@ -169,6 +182,7 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 				p = strtok( NULL , PRESSX_BLANK_DELIM ) ;
 			if( p == NULL )
 			{
+				snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "strtok for field name failed" );
 				_PXFreeTestFieldAndData( msg_tpl );
 				fclose( fp );
 				return NULL;
@@ -177,6 +191,7 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 			msg_tpl->test_field[i] = strdup( p ) ;
 			if( msg_tpl->test_field[i] == NULL )
 			{
+				snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "strdup failed , errno[%d]" , errno );
 				_PXFreeTestFieldAndData( msg_tpl );
 				fclose( fp );
 				return NULL;
@@ -189,16 +204,17 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 			int		i ;
 			for( i = 0 ; i < msg_tpl->test_data_column_count ; i++ )
 			{
-				printf( "DEBUG - msg_tpl->test_field[%.*s]\n" , msg_tpl->test_field_len[i] , msg_tpl->test_field[i] );
+				printf( "DEBUG - 222 - msg_tpl->test_field[%.*s]\n" , msg_tpl->test_field_len[i] , msg_tpl->test_field[i] );
 			}
 		}
 #endif
 		
-		msg_tpl->test_data_row_size = 100 ;
+		msg_tpl->test_data_row_size = TEST_DATA_ROW_SIZE_INIT ;
 		
 		msg_tpl->test_data = (char **)malloc( sizeof(char*)*msg_tpl->test_data_row_size*msg_tpl->test_data_column_count ) ;
 		if( msg_tpl->test_data == NULL )
 		{
+			snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "malloc failed , errno[%d]" , errno );
 			_PXFreeTestFieldAndData( msg_tpl );
 			fclose( fp );
 			return NULL;
@@ -208,6 +224,7 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 		msg_tpl->test_data_len = (int *)malloc( sizeof(int)*msg_tpl->test_data_row_size*msg_tpl->test_data_column_count ) ;
 		if( msg_tpl->test_data_len == NULL )
 		{
+			snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "malloc failed , errno[%d]" , errno );
 			_PXFreeTestFieldAndData( msg_tpl );
 			fclose( fp );
 			return NULL;
@@ -226,11 +243,15 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 				char		**new_test_data = NULL ;
 				int		*new_test_data_len = NULL ;
 				
-				new_test_data_row_size = msg_tpl->test_data_row_size + 100 ;
+				new_test_data_row_size = msg_tpl->test_data_row_size + TEST_DATA_ROW_SIZE_INCREASE ;
+#if _DEBUG
+				printf( "DEBUG - 333 - msg_tpl->test_data_row_size[%d] -> [%d]\n" , msg_tpl->test_data_row_size , new_test_data_row_size );
+#endif
 				
-				new_test_data = (char **)realloc( msg_tpl->test_data , sizeof(char*) * msg_tpl->test_data_row_size * msg_tpl->test_data_column_count ) ;
+				new_test_data = (char **)realloc( msg_tpl->test_data , sizeof(char*) * new_test_data_row_size * msg_tpl->test_data_column_count ) ;
 				if( new_test_data == NULL )
 				{
+					snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "realloc failed , errno[%d]" , errno );
 					_PXFreeTestFieldAndData( msg_tpl );
 					fclose( fp );
 					return NULL;
@@ -238,9 +259,10 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 				memset( new_test_data+msg_tpl->test_data_row_size*msg_tpl->test_data_column_count , 0x00 , sizeof(char*) * (new_test_data_row_size-msg_tpl->test_data_row_size) * msg_tpl->test_data_column_count );
 				msg_tpl->test_data = new_test_data ;
 				
-				new_test_data_len = (int *)realloc( msg_tpl->test_data_len , sizeof(int) * msg_tpl->test_data_row_size * msg_tpl->test_data_column_count ) ;
+				new_test_data_len = (int *)realloc( msg_tpl->test_data_len , sizeof(int) * new_test_data_row_size * msg_tpl->test_data_column_count ) ;
 				if( new_test_data_len == NULL )
 				{
+					snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "realloc failed , errno[%d]" , errno );
 					_PXFreeTestFieldAndData( msg_tpl );
 					fclose( fp );
 					return NULL;
@@ -259,6 +281,7 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 					p = strtok( NULL , PRESSX_BLANK_DELIM ) ;
 				if( p == NULL )
 				{
+					snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "strtok for field data failed" );
 					_PXFreeTestFieldAndData( msg_tpl );
 					fclose( fp );
 					return NULL;
@@ -270,35 +293,39 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 					msg_tpl->test_data[msg_tpl->test_data_row_count*msg_tpl->test_data_column_count+i] = strdup( p ) ;
 				if( msg_tpl->test_data[i] == NULL )
 				{
+					snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "strtok for field data failed" );
 					_PXFreeTestFieldAndData( msg_tpl );
 					fclose( fp );
 					return NULL;
 				}
 				msg_tpl->test_data_len[msg_tpl->test_data_row_count*msg_tpl->test_data_column_count+i] = strlen(msg_tpl->test_data[msg_tpl->test_data_row_count*msg_tpl->test_data_column_count+i]) ;
+#if _DEBUG
+				printf( "DEBUG - 333 - msg_tpl->test_data[%d][%d][%.*s]\n" , msg_tpl->test_data_row_count , i , msg_tpl->test_data_len[msg_tpl->test_data_row_count*msg_tpl->test_data_column_count+i] , msg_tpl->test_data[msg_tpl->test_data_row_count*msg_tpl->test_data_column_count+i] );
+#endif
 			}
 			
 			msg_tpl->test_data_row_count++;
 		}
 		
-#if _DEBUG
-		{
-			int		i , j ;
-			for( i = 0 ; i < msg_tpl->test_data_row_count ; i++ )
-			{
-				for( j = 0 ; j < msg_tpl->test_data_column_count ; j++ )
-				{
-					printf( "DEBUG - msg_tpl->test_data[%d][%d][%.*s]\n" , i , j , msg_tpl->test_data_len[msg_tpl->test_data_column_count*i+j] , msg_tpl->test_data[msg_tpl->test_data_column_count*i+j] );
-				}
-			}
-		}
-#endif
 		
 		fclose( fp );
 	}
 	
 	nret = PXReadEntireFile( msg_tpl_pathfilename , & (msg_tpl->msg_tpl) , & (msg_tpl->msg_tpl_len) ) ;
 	if( nret )
+	{
+		snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "PXReadEntireFile[%s] failed , errno[%d]" , test_data_pathfilename , errno );
 		return NULL;
+	}
+	
+#if _DEBUG
+	printf( "DEBUG - 444 - msg_tpl[%.*s]\n" , msg_tpl->msg_tpl_len , msg_tpl->msg_tpl );
+#endif
+	
+	if( msg_tpl->test_field == NULL )
+	{
+		return msg_tpl;
+	}
 	
 	msg_tpl->substr_lct_count = 1 ;
 	if( test_data_pathfilename )
@@ -308,7 +335,10 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 		{
 			p = strchr( p+1 , '$' ) ;
 			if( p == NULL )
+			{
+				snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "'$' not matched" );
 				return NULL;
+			}
 			
 			msg_tpl->substr_lct_count += 2 ;
 			
@@ -319,17 +349,10 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 	msg_tpl->substr_lct_array = (struct PxSubstrLocator *)malloc( sizeof(struct PxSubstrLocator)*msg_tpl->substr_lct_count ) ;
 	if( msg_tpl->substr_lct_array == NULL )
 	{
+		snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "malloc failed , errno[%d]" , errno );
 		return NULL;
 	}
 	memset( msg_tpl->substr_lct_array , 0x00 , sizeof(struct PxSubstrLocator)*msg_tpl->substr_lct_count );
-	
-	if( msg_tpl->substr_lct_count == 1 )
-	{
-		msg_tpl->substr_lct_array[0].rpl_offset_ptr = msg_tpl->msg_tpl ;
-		msg_tpl->substr_lct_array[0].rpl_len = msg_tpl->msg_tpl_len ;
-		msg_tpl->substr_lct_array[0].test_data_column_index = -1 ;
-		return msg_tpl;
-	}
 	
 	i = 0 ;
 	p2 = msg_tpl->msg_tpl ;
@@ -340,13 +363,14 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 		msg_tpl->substr_lct_array[i].rpl_len = p1 - p2 ;
 		msg_tpl->substr_lct_array[i].test_data_column_index = -1 ;
 #if _DEBUG
-		printf( "DEBUG - substr_lct1[%d] [%.*s][%d]\n" , i , msg_tpl->substr_lct_array[i].rpl_len , msg_tpl->substr_lct_array[i].rpl_offset_ptr , msg_tpl->substr_lct_array[i].test_data_column_index );
+		printf( "DEBUG - 555 - substr_lct1[%d] [%.*s][%d]\n" , i , msg_tpl->substr_lct_array[i].rpl_len , msg_tpl->substr_lct_array[i].rpl_offset_ptr , msg_tpl->substr_lct_array[i].test_data_column_index );
 #endif
 		i++;
 		
 		p2 = strchr( p1+1 , '$' ) ;
 		if( p2 == NULL )
 		{
+			snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "'$' not matched" );
 			return NULL;
 		}
 		
@@ -363,18 +387,27 @@ struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char
 		}
 		if( j >= msg_tpl->test_data_column_count )
 		{
+			snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "var[%.*s] not found in template file[%s]" , msg_tpl->substr_lct_array[i].rpl_len , msg_tpl->substr_lct_array[i].rpl_offset_ptr , msg_tpl_pathfilename );
 			free( msg_tpl->substr_lct_array );
 			return NULL;
 		}
 		
 #if _DEBUG
-		printf( "DEBUG - substr_lct2[%d] [%.*s][%d]\n" , i , msg_tpl->substr_lct_array[i].rpl_len , msg_tpl->substr_lct_array[i].rpl_offset_ptr , msg_tpl->substr_lct_array[i].test_data_column_index );
+		printf( "DEBUG - 555 - substr_lct2[%d] [%.*s][%d]\n" , i , msg_tpl->substr_lct_array[i].rpl_len , msg_tpl->substr_lct_array[i].rpl_offset_ptr , msg_tpl->substr_lct_array[i].test_data_column_index );
 #endif
 		i++;
 		
 		p2++;
 		p1 = strchr( p2 , '$' ) ;
 	}
+	
+	msg_tpl->substr_lct_array[i].rpl_offset_ptr = p2 ;
+	msg_tpl->substr_lct_array[i].rpl_len = msg_tpl->msg_tpl_len - (p2-msg_tpl->msg_tpl) ;
+	msg_tpl->substr_lct_array[i].test_data_column_index = -1 ;
+#if _DEBUG
+	printf( "DEBUG - 555 - substr_lct3[%d] [%.*s][%d]\n" , i , msg_tpl->substr_lct_array[i].rpl_len , msg_tpl->substr_lct_array[i].rpl_offset_ptr , msg_tpl->substr_lct_array[i].test_data_column_index );
+#endif
+	i++;
 	
 	return msg_tpl;
 }
@@ -384,20 +417,27 @@ char *PXInstaceMessageByRandom( struct PxMessageTemplate *msg_tpl , int *p_msg_i
 	int		select_row_index = -1 ;
 	int		i ;
 	
-	if( msg_tpl->substr_lct_count > 1 )
+	if( msg_tpl->test_field == NULL )
 	{
-		select_row_index = Rand( 0 , msg_tpl->test_data_row_count-1 ) ;
+		if( p_msg_ins_len )
+			(*p_msg_ins_len) = msg_tpl->msg_tpl_len ;
+		return msg_tpl->msg_tpl;
+	}
+	
+	select_row_index = Rand( 0 , msg_tpl->test_data_row_count-1 ) ;
 #if _DEBUG
 	printf( "DEBUG - select_row_index[%d]\n" , select_row_index );
 #endif
-	}
 	
 	if( msg_tpl->msg_ins == NULL )
 	{
 		msg_tpl->msg_ins_bufsize = msg_tpl->msg_tpl_len * 2 ;
 		msg_tpl->msg_ins = (char *)malloc( msg_tpl->msg_ins_bufsize ) ;
 		if( msg_tpl->msg_ins == NULL )
+		{
+			snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "malloc failed , errno[%d]" , errno );
 			return NULL;
+		}
 		memset( msg_tpl->msg_ins , 0x00 , msg_tpl->msg_ins_bufsize );
 		msg_tpl->msg_ins_len = 0 ;
 	}
@@ -416,7 +456,10 @@ char *PXInstaceMessageByRandom( struct PxMessageTemplate *msg_tpl , int *p_msg_i
 			new_msg_ins_bufsize = msg_tpl->msg_ins_len + msg_tpl->substr_lct_array[i].rpl_len + 1 ;
 			new_msg_ins = (char *)realloc( msg_tpl->msg_ins , new_msg_ins_bufsize ) ;
 			if( new_msg_ins == NULL )
+			{
+				snprintf( _g_message_template_error_desc , sizeof(_g_message_template_error_desc)-1 , "realloc failed , errno[%d]" , errno );
 				return NULL;
+			}
 			msg_tpl->msg_ins_bufsize = new_msg_ins_bufsize ;
 			msg_tpl->msg_ins = new_msg_ins ;
 		}
@@ -474,5 +517,10 @@ void PXFreeMessageTemplate( struct PxMessageTemplate *msg_tpl )
 	free( msg_tpl );
 	
 	return;
+}
+
+char *PXGetMessageTemplateErrorDesc()
+{
+	return _g_message_template_error_desc;
 }
 

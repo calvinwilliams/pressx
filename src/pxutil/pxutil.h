@@ -168,6 +168,7 @@ struct PxMessageTemplate ;
 struct PxMessageTemplate *PXCompileTemplate( char *test_data_pathfilename , char *msg_tpl_pathfilename );
 char *PXInstaceMessageByRandom( struct PxMessageTemplate *msg_tpl , int *p_msg_ins_len );
 void PXFreeMessageTemplate( struct PxMessageTemplate *msg_tpl );
+char *PXGetMessageTemplateErrorDesc();
 
 #define PRESSX_MAXLEN_USER_NAME		64
 

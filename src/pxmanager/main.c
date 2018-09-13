@@ -1,16 +1,16 @@
 #include "pxmanager_in.h"
 
-char	_PXMANAGER_VERSION_0_3_0[] = "0.3.0" ;
-char	*_PXMANAGER_VERSION = _PXMANAGER_VERSION_0_3_0 ;
+char	_PXMANAGER_VERSION_0_4_0[] = "0.4.0" ;
+char	*_PXMANAGER_VERSION = _PXMANAGER_VERSION_0_4_0 ;
 
 static void usage()
 {
 	printf( "USAGE : manager --listen-ip (ip) --listen-port (port)\n" );
 	printf( "                  [ [-p|--process-count] (count) ]\n" );
 	printf( "                  [ [-t|--thread-count] (count) ]\n" );
-	printf( "                  [ [-n|--run-count] (count) ]\n" );
 	printf( "                  [ [-g|--run-plugin] (filename)\n" );
 	printf( "                  [ [-m|--run-parameter] (cmd) ]\n" );
+	printf( "                  [ [-n|--run-count] (count) ]\n" );
 	return;
 }
 

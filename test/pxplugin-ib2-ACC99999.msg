@@ -31,13 +31,13 @@
   </RequestHeader>
   <RequestBody>
     <Account_Query>
-      <trans_serial>$TRANS_SERIAL$</trans_serial>
-      <media_no>$MEDIA_NO$</media_no>
+      <trans_serial>QUERY00004</trans_serial>
+      <media_no>3301040160000059082</media_no>
       <volume_no />
-      <trans_type>$TRANS_TYPE$</trans_type>
+      <trans_type>2</trans_type>
       <track_02 />
       <track_03 />
-      <track_check>$TRACK_CHECK$</track_check>
+      <track_check>00</track_check>
     </Account_Query>
   </RequestBody>
 </hzbank>
