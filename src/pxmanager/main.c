@@ -1,7 +1,7 @@
 #include "pxmanager_in.h"
 
-char	_PXMANAGER_VERSION_0_4_0[] = "0.4.0" ;
-char	*_PXMANAGER_VERSION = _PXMANAGER_VERSION_0_4_0 ;
+char	_PXMANAGER_VERSION_0_5_0[] = "0.5.0" ;
+char	*_PXMANAGER_VERSION = _PXMANAGER_VERSION_0_5_0 ;
 
 static void usage()
 {
