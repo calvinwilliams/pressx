@@ -152,6 +152,8 @@ struct NetAddress
 	} \
 	}
 
+extern char    *_PRESSX_VERSION ;
+
 #define PRESSX_BLANK_DELIM		" \t\f\r\n"
 
 char *gettok( char *str , const char *delim );

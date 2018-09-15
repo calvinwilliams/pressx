@@ -14,6 +14,7 @@ c_FILE		=	\
 			socket.c \
 			file.c \
 			msg_tpl.c \
+			version.c \
 
 ###### 目标文件、安装目录配置区
 include makeinstall
@@ -34,7 +35,7 @@ CFLAGS		=	$(_CFLAGS) \
 LFLAGS		=	$(_LFLAGS) \
 
 ###### 额外宏定义区
-CLEAN_ADDITION	=	test_msg_tpl.o
+CLEAN_ADDITION	=	test_msg_tpl.o test_msg_tpl
 
 PREMAKE		=
 

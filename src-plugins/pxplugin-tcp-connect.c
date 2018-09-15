@@ -3,10 +3,16 @@
 struct PxPluginUserData
 {
 	struct NetAddress	netaddr ;
+	unsigned char		output_flag ;
 } ;
 
 /* run parameter
-ip:port
+ip port
+*/
+
+/* for example
+$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -g pxplugin-tcp-connect.so -m "192.168.6.21 80" -n 2
+$ pxagent --connect-ip 192.168.6.21 --connect-port 9527
 */
 
 funcInitPxPlugin InitPxPlugin ;
@@ -24,15 +30,17 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	
 	user_data->netaddr.addr.sin_family = AF_INET ;
 	
-	sscanf( GetPxPluginRunParameterPtr(p_pxplugin_ctx) , "%[^:]:%d" , user_data->netaddr.ip , & (user_data->netaddr.port) );
+	sscanf( GetPxPluginRunParameterPtr(p_pxplugin_ctx) , "%s%d" , user_data->netaddr.ip , & (user_data->netaddr.port) );
 	if( user_data->netaddr.ip[0] == '\0' || user_data->netaddr.port <= 0 )
 	{
-		printf( "pxplugin-tcp-connect | run parameter '%s' invalid for format '(ip):(port)'\n" , GetPxPluginRunParameterPtr(p_pxplugin_ctx) );
+		printf( "pxplugin-tcp-connect | run parameter '%s' invalid for format '(ip) (port)'\n" , GetPxPluginRunParameterPtr(p_pxplugin_ctx) );
 		return -1;
 	}
 	
 	user_data->netaddr.addr.sin_addr.s_addr = inet_addr(user_data->netaddr.ip) ;
 	user_data->netaddr.addr.sin_port = htons( (unsigned short)user_data->netaddr.port );
+	
+	user_data->output_flag = 1 ;
 	
 	SetPxPluginUserData( p_pxplugin_ctx , user_data );
 	
@@ -61,7 +69,14 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 		return -1;
 	}
 	
+	if( user_data->output_flag == 1 && GetPxPluginOutputFlag(p_pxplugin_ctx) )
+	{
+		printf( "connect[%s:%d] ok\n" , user_data->netaddr.ip , user_data->netaddr.port );
+	}
+	
 	close( user_data->netaddr.sock );
+	
+	user_data->output_flag = 0 ;
 	
 	return 0;
 }

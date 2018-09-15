@@ -17,7 +17,8 @@ ip port http_request_pathfilename
 */
 
 /* for example
-$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -n 1 -g pxplugin-http.so -m "192.168.6.21 80 pxplugin-http.txt"  
+$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -g pxplugin-http.so -m "192.168.6.21 80 pxplugin-http.msg" -n 1
+$ pxagent --connect-ip 192.168.6.21 --connect-port 9527
 */
 
 #define CONTENT_LENGTH		"Content-length: "
@@ -51,6 +52,8 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	user_data->netaddr.addr.sin_addr.s_addr = inet_addr(user_data->netaddr.ip) ;
 	user_data->netaddr.addr.sin_port = htons( (unsigned short)user_data->netaddr.port );
 	
+	user_data->output_flag = 1 ;
+	
 	nret = PXReadEntireFile( http_request_pathfilename , & (user_data->request) , & user_data->request_len ) ;
 	if( nret )
 	{
@@ -74,7 +77,10 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	{
 		user_data->keep_alive = 0 ;
 	}
-	printf( "keep_alive[%d]\n" , user_data->keep_alive );
+	if( GetPxPluginOutputFlag(p_pxplugin_ctx) )
+	{
+		printf( "keep_alive[%d]\n" , user_data->keep_alive );
+	}
 	
 	if( user_data->keep_alive == 1 )
 	{
@@ -95,7 +101,10 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 		}
 		else
 		{
-			printf( "connect[%s:%d] ok\n" , user_data->netaddr.ip , user_data->netaddr.port );
+			if( GetPxPluginOutputFlag(p_pxplugin_ctx) )
+			{
+				printf( "connect[%s:%d] ok\n" , user_data->netaddr.ip , user_data->netaddr.port );
+			}
 		}
 	}
 	else
@@ -146,8 +155,10 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 		}
 		else
 		{
-			if( user_data->output_flag == 0 )
+			if( user_data->output_flag == 1 && GetPxPluginOutputFlag(p_pxplugin_ctx) )
+			{
 				printf( "connect[%s:%d] ok\n" , user_data->netaddr.ip , user_data->netaddr.port );
+			}
 		}
 	}
 	
@@ -159,8 +170,10 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	}
 	else
 	{
-		if( user_data->output_flag == 0 )
+		if( user_data->output_flag == 1 && GetPxPluginOutputFlag(p_pxplugin_ctx) )
+		{
 			printf( "request[%.*s]\n" , user_data->request_len , user_data->request );
+		}
 	}
 	
 	remain_len = -1 ;
@@ -179,8 +192,10 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	}
 	else
 	{
-		if( user_data->output_flag == 0 )
+		if( user_data->output_flag == 1 && GetPxPluginOutputFlag(p_pxplugin_ctx) )
+		{
 			printf( "first response[%.*s]\n" , response_len , response_buffer );
+		}
 	}
 	
 	sscanf( response_buffer , "%*s%d" , & status_code );
@@ -232,8 +247,10 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 			}
 			else
 			{
-				if( user_data->output_flag == 0 )
+				if( user_data->output_flag == 1 && GetPxPluginOutputFlag(p_pxplugin_ctx) )
+				{
 					printf( "continue response[%.*s]\n" , len , remain_buffer );
+				}
 			}
 			
 			remain_len -= len ;
@@ -242,12 +259,14 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	
 	if( user_data->keep_alive == 0 || STRISTR( response_buffer , "Connection: Close" ) )
 	{
-		if( user_data->output_flag == 0 )
+		if( user_data->output_flag == 1 && GetPxPluginOutputFlag(p_pxplugin_ctx) )
+		{
 			printf( "disconnect[%s:%d]\n" , user_data->netaddr.ip , user_data->netaddr.port );
+		}
 		close( user_data->netaddr.sock ); user_data->netaddr.sock = -1 ;
 	}
 	
-	user_data->output_flag = 1 ;
+	user_data->output_flag = 0 ;
 	
 	return 0;
 }

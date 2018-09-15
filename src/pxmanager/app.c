@@ -7,8 +7,8 @@ int app_ShowManagerInfo( struct PxManager *p_manager )
 	printf( "process count : %u\n" , p_manager->process_count );
 	printf( "thread count : %u\n" , p_manager->thread_count );
 	printf( "run plugin : %s\n" , p_manager->run_plugin );
-	printf( "run count : %u\n" , p_manager->run_count );
 	printf( "run parameter : '%s'\n" , p_manager->run_parameter );
+	printf( "run count : %u\n" , p_manager->run_count );
 	
 	return 0;
 }
@@ -87,6 +87,9 @@ int app_RunPressing( struct PxManager *p_manager )
 	struct PxPerformanceStatMessage		perf_stat ;
 	unsigned int				process_thread_idex ;
 	unsigned int				process_thread_count ;
+	int					remain_accepted_session_count ;
+	fd_set					read_fds ;
+	int					max_fd ;
 	unsigned int				total_run_count ;
 	double					run_timeval ;
 	double					total_run_timeval ;
@@ -123,6 +126,8 @@ int app_RunPressing( struct PxManager *p_manager )
 			return -1;
 		}
 		
+		p_accepted_session->response_flag = 0 ;
+		
 		printf( "%s@%s:%d run pressing ...\n" , p_accepted_session->reg_msg.user_name , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
 	}
 	
@@ -135,30 +140,64 @@ int app_RunPressing( struct PxManager *p_manager )
 	max_delay_timeval.tv_sec = LONG_MIN ;
 	max_delay_timeval.tv_usec = LONG_MIN ;
 	
-	list_for_each_entry( p_accepted_session , & (p_manager->accepted_session_list) , struct PxAcceptedSession , listnode )
+	remain_accepted_session_count = host_count ;
+	while( remain_accepted_session_count > 0 )
 	{
-		printf( "waiting %s@%s:%d finishing ...\n" , p_accepted_session->reg_msg.user_name , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
-		
-		for( process_thread_idex = 0 ; process_thread_idex < process_thread_count ; process_thread_idex++ )
+		FD_ZERO( & read_fds );
+		max_fd = -1 ;
+		list_for_each_entry( p_accepted_session , & (p_manager->accepted_session_list) , struct PxAcceptedSession , listnode )
 		{
-			memset( & perf_stat , 0x00 , sizeof(struct PxPerformanceStatMessage) );
-			nret = readn( p_accepted_session->netaddr.sock , (void*)&perf_stat , sizeof(struct PxPerformanceStatMessage) , NULL ) ;
-			if( nret )
+			if( p_accepted_session->response_flag == 0 )
 			{
-				printf( "*** ERROR : readn failed[%d] , errno[%d]\n" , nret , errno );
-				return 0;
+				FD_SET( p_accepted_session->netaddr.sock , & read_fds );
+				if( p_accepted_session->netaddr.sock > max_fd )
+					max_fd = p_accepted_session->netaddr.sock ;
 			}
-			
-			printf( "run_count[%u] run_timeval[%ld.%06ld] min_delay_timeval[%ld.%06ld] max_delay_timeval[%ld.%06ld]\n" , perf_stat.run_count , perf_stat.run_timeval.tv_sec,perf_stat.run_timeval.tv_usec , perf_stat.min_delay_timeval.tv_sec,perf_stat.min_delay_timeval.tv_usec , perf_stat.max_delay_timeval.tv_sec,perf_stat.max_delay_timeval.tv_usec );
-			
-			total_run_count += perf_stat.run_count ;
-			run_timeval = (double)(perf_stat.run_timeval.tv_sec) + ((double)(perf_stat.run_timeval.tv_usec))/1000000 ;
-			total_run_timeval += run_timeval ;
-			total_tps += ( perf_stat.run_count / run_timeval ) ;
-			MIN_VAL_TIMEVAL( min_delay_timeval , perf_stat.min_delay_timeval )
-			MAX_VAL_TIMEVAL( max_delay_timeval , perf_stat.max_delay_timeval )
+		}
+		
+		printf( "waiting any finishing ...\n" );
+		nret = select( max_fd+1 , & read_fds , NULL , NULL , NULL ) ;
+		if( nret == -1 )
+		{
+			printf( "*** ERROR : select failed[%d] , errno[%d]\n" , nret , errno );
+			return -1;
+		}
+		
+		list_for_each_entry( p_accepted_session , & (p_manager->accepted_session_list) , struct PxAcceptedSession , listnode )
+		{
+			if( p_accepted_session->response_flag == 0 )
+			{
+				if( FD_ISSET( p_accepted_session->netaddr.sock , & read_fds ) )
+				{
+					printf( "%s@%s:%d finished\n" , p_accepted_session->reg_msg.user_name , p_accepted_session->netaddr.remote_ip , p_accepted_session->netaddr.remote_port );
+					
+					for( process_thread_idex = 0 ; process_thread_idex < process_thread_count ; process_thread_idex++ )
+					{
+						memset( & perf_stat , 0x00 , sizeof(struct PxPerformanceStatMessage) );
+						nret = readn( p_accepted_session->netaddr.sock , (void*)&perf_stat , sizeof(struct PxPerformanceStatMessage) , NULL ) ;
+						if( nret )
+						{
+							printf( "*** ERROR : readn failed[%d] , errno[%d]\n" , nret , errno );
+							return 0;
+						}
+						
+						printf( "run_count[%u] run_timeval[%ld.%06ld] min_delay_timeval[%ld.%06ld] max_delay_timeval[%ld.%06ld]\n" , perf_stat.run_count , perf_stat.run_timeval.tv_sec,perf_stat.run_timeval.tv_usec , perf_stat.min_delay_timeval.tv_sec,perf_stat.min_delay_timeval.tv_usec , perf_stat.max_delay_timeval.tv_sec,perf_stat.max_delay_timeval.tv_usec );
+						
+						total_run_count += perf_stat.run_count ;
+						run_timeval = (double)(perf_stat.run_timeval.tv_sec) + ((double)(perf_stat.run_timeval.tv_usec))/1000000 ;
+						total_run_timeval += run_timeval ;
+						total_tps += ( perf_stat.run_count / run_timeval ) ;
+						MIN_VAL_TIMEVAL( min_delay_timeval , perf_stat.min_delay_timeval )
+						MAX_VAL_TIMEVAL( max_delay_timeval , perf_stat.max_delay_timeval )
+					}
+					
+					p_accepted_session->response_flag = 1 ;
+					remain_accepted_session_count--;
+				}
+			}
 		}
 	}
+	
 	avg_run_timeval = total_run_timeval / host_count / process_thread_count ;
 	
 	printf( "all process and thread finished\n" );
@@ -166,8 +205,8 @@ int app_RunPressing( struct PxManager *p_manager )
 	printf( "          process count : %u\n" , p_manager->process_count );
 	printf( "           thread count : %u\n" , p_manager->thread_count );
 	printf( "             run plugin : %s\n" , p_manager->run_plugin );
-	printf( "              run count : %u\n" , p_manager->run_count );
 	printf( "          run parameter : '%s'\n" , p_manager->run_parameter );
+	printf( "              run count : %u\n" , p_manager->run_count );
 	printf( "\n" );
 	printf( "        total run count : %u\n" , total_run_count );
 	printf( "        avg run timeval : %.6lf (s)\n" , avg_run_timeval );
