@@ -12,6 +12,11 @@ void *GetPxPluginUserData( struct PxPluginContext *p_pxplugin_ctx )
 	return p_pxplugin_ctx->user_data;
 }
 
+unsigned char GetPxPluginOutputFlag( struct PxPluginContext *p_pxplugin_ctx )
+{
+	return p_pxplugin_ctx->output_flag;
+}
+
 unsigned int GetPxPluginRunCount( struct PxPluginContext *p_pxplugin_ctx )
 {
 	return p_pxplugin_ctx->p_agent->run_pressing.run_count;

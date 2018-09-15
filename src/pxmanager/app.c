@@ -7,8 +7,8 @@ int app_ShowManagerInfo( struct PxManager *p_manager )
 	printf( "process count : %u\n" , p_manager->process_count );
 	printf( "thread count : %u\n" , p_manager->thread_count );
 	printf( "run plugin : %s\n" , p_manager->run_plugin );
-	printf( "run count : %u\n" , p_manager->run_count );
 	printf( "run parameter : '%s'\n" , p_manager->run_parameter );
+	printf( "run count : %u\n" , p_manager->run_count );
 	
 	return 0;
 }
@@ -166,8 +166,8 @@ int app_RunPressing( struct PxManager *p_manager )
 	printf( "          process count : %u\n" , p_manager->process_count );
 	printf( "           thread count : %u\n" , p_manager->thread_count );
 	printf( "             run plugin : %s\n" , p_manager->run_plugin );
-	printf( "              run count : %u\n" , p_manager->run_count );
 	printf( "          run parameter : '%s'\n" , p_manager->run_parameter );
+	printf( "              run count : %u\n" , p_manager->run_count );
 	printf( "\n" );
 	printf( "        total run count : %u\n" , total_run_count );
 	printf( "        avg run timeval : %.6lf (s)\n" , avg_run_timeval );

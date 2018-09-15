@@ -18,6 +18,7 @@ struct PxPluginContext
 	unsigned int			thread_index ;
 	struct PxPerformanceStatMessage	*perf_stat ;
 	void				*user_data ;
+	unsigned char			output_flag ;
 } ;
 
 struct PxAgent

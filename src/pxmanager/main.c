@@ -1,7 +1,12 @@
 #include "pxmanager_in.h"
 
-char	_PXMANAGER_VERSION_0_5_0[] = "0.5.0" ;
-char	*_PXMANAGER_VERSION = _PXMANAGER_VERSION_0_5_0 ;
+/* for example
+$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -g pxplugin-tcp-connect.so -m "192.168.6.21 80" -n 2
+*/
+
+/* for example
+$ pxmanager --listen-ip 66.88.1.61 --listen-port 9527 -p 1 -t 1 -g pxplugin-ib2 -m "0000 ACC99999 pxplugin-ib2-ACC99999.test_data:pxplugin-ib2-ACC99999.msg_tpl" -n 2
+*/
 
 static void usage()
 {
@@ -16,7 +21,7 @@ static void usage()
 
 static void version()
 {
-	printf( "manager v%s\n" , _PXMANAGER_VERSION );
+	printf( "manager v%s\n" , _PRESSX_VERSION );
 	return;
 }
 

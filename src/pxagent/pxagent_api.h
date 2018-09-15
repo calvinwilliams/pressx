@@ -16,6 +16,8 @@ typedef int funcCleanPxPlugin( struct PxPluginContext *p_pxplugin_ctx );
 void SetPxPluginUserData( struct PxPluginContext *p_pxplugin_ctx , void *user_data );
 void *GetPxPluginUserData( struct PxPluginContext *p_pxplugin_ctx );
 
+unsigned char GetPxPluginOutputFlag( struct PxPluginContext *p_pxplugin_ctx );
+
 unsigned int GetPxPluginRunCount( struct PxPluginContext *p_pxplugin_ctx );
 char *GetPxPluginRunParameterPtr( struct PxPluginContext *p_pxplugin_ctx );
 

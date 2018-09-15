@@ -1,7 +1,12 @@
 #include "pxagent_in.h"
 
-char	_PXAGENT_VERSION_0_5_0[] = "0.5.0" ;
-char	*_PXAGENT_VERSION = _PXAGENT_VERSION_0_5_0 ;
+/* for example
+$ pxagent --connect-ip 192.168.6.21 --connect-port 9527
+*/
+
+/* for example
+$ pxagent --connect-ip 66.88.1.61 --connect-port 9527
+*/
 
 static void usage()
 {
@@ -11,7 +16,7 @@ static void usage()
 
 static void version()
 {
-	printf( "pxagent v%s\n" , _PXAGENT_VERSION );
+	printf( "pxagent v%s\n" , _PRESSX_VERSION );
 	return;
 }
 

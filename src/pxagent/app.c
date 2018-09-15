@@ -236,7 +236,7 @@ void *app_ThreadEntry( void *p )
 	{
 		p_pxplugin_ctx->perf_stat->min_delay_timeval.tv_sec = LONG_MAX ;
 		p_pxplugin_ctx->perf_stat->min_delay_timeval.tv_usec = LONG_MAX ;
-		
+		p_pxplugin_ctx->output_flag = 1 ;
 		nret = p_pxplugin_ctx->p_agent->pfuncRawRunPxPlugin( p_pxplugin_ctx ) ;
 		if( nret )
 		{
@@ -255,6 +255,10 @@ void *app_ThreadEntry( void *p )
 		{
 			gettimeofday( & tv2 , NULL );
 			
+			if( run_index == 0 && p_pxplugin_ctx->process_index == 0 && p_pxplugin_ctx->thread_index == 0 )
+				p_pxplugin_ctx->output_flag = 1 ;
+			else
+				p_pxplugin_ctx->output_flag = 0 ;
 			nret = p_pxplugin_ctx->p_agent->pfuncRunPxPlugin( p_pxplugin_ctx ) ;
 			if( nret )
 			{

@@ -7,6 +7,7 @@
 struct PxIompSession
 {
 	unsigned int		iomp_index ;
+	unsigned char		output_flag ;
 	struct NetAddress	netaddr ;
 	struct HttpEnv		*http_env ;
 	unsigned char		request_or_response_flag ;
@@ -34,7 +35,7 @@ ip port http_request_pathfilename iomp_count total_count
 */
 
 /* for example
-$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -n 1 -g pxplugin-http-fasterhttp-IOMP.so -m "192.168.6.21 80 pxplugin-http.txt 10 100"
+$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -g pxplugin-http-fasterhttp-IOMP.so -m "192.168.6.21 80 pxplugin-http.txt 100 100000" -n 1
 $ pxagent --connect-ip 192.168.6.21 --connect-port 9527
 */
 
@@ -61,6 +62,8 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 		printf( "pxplugin-http-fasterhttp-IOMP | run parameter '%s' invalid for format '(ip) (port) (http_request_pathfilename) (iomp_count) (total_count)'\n" , GetPxPluginRunParameterPtr(p_pxplugin_ctx) );
 		return -1;
 	}
+	
+	user_data->output_flag = 1 ;
 	
 	nret = PXReadEntireFile( http_request_pathfilename , & (user_data->request) , & user_data->request_len ) ;
 	if( nret )
@@ -90,7 +93,7 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	return 0;
 }
 
-static int ConnectToServer( struct PxPluginUserData *user_data , struct PxIompSession *s )
+static int ConnectToServer( struct PxPluginContext *p_pxplugin_ctx , struct PxPluginUserData *user_data , struct PxIompSession *s )
 {
 	int		nret = 0 ;
 	
@@ -122,6 +125,11 @@ static int ConnectToServer( struct PxPluginUserData *user_data , struct PxIompSe
 		opts = fcntl( s->netaddr.sock , F_GETFL );
 		opts |= O_NONBLOCK ;
 		fcntl( s->netaddr.sock , F_SETFL , opts );
+	}
+	
+	if( user_data->output_flag == 1 && GetPxPluginOutputFlag(p_pxplugin_ctx) )
+	{
+		printf( "connect[%s:%d] ok\n" , s->netaddr.ip , s->netaddr.port );
 	}
 	
 	return 0;
@@ -178,7 +186,7 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 				return -1;
 			}
 			
-			nret = ConnectToServer( user_data , s ) ;
+			nret = ConnectToServer( p_pxplugin_ctx , user_data , s ) ;
 			if( nret )
 			{
 				printf( "*** ERROR : ConnectToServer failed[%d]\n" , nret );
@@ -193,7 +201,7 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 				return -1;
 			}
 			
-			if( user_data->output_flag == 1 && s == user_data->p_output_session )
+			if( user_data->output_flag == 1 && user_data->p_output_session == s && GetPxPluginOutputFlag(p_pxplugin_ctx) )
 			{
 				printf( "HTTP REQUEST[%.*s]\n" , GetHttpBufferLength(b) , GetHttpBufferBase(b,NULL) );
 			}
@@ -211,7 +219,7 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 			}
 			else
 			{
-				if( user_data->output_flag == 1 && s == user_data->p_output_session )
+				if( user_data->output_flag == 1 && user_data->p_output_session == s && GetPxPluginOutputFlag(p_pxplugin_ctx) )
 				{
 					printf( "epoll_ctl[%d][%d] EPOLL_CTL_ADD ok\n" , user_data->epoll_fd , s->netaddr.sock );
 				}
@@ -239,7 +247,7 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 				nret = SendHttpRequestNonblock( s->netaddr.sock , NULL , s->http_env ) ;
 				if( nret == FASTERHTTP_INFO_TCP_SEND_WOULDBLOCK )
 				{
-					if( user_data->output_flag == 1 && s == user_data->p_output_session )
+					if( user_data->output_flag == 1 && user_data->p_output_session == s && GetPxPluginOutputFlag(p_pxplugin_ctx) )
 					{
 						printf( "SendHttpRequestNonblock[%d] return FASTERHTTP_INFO_TCP_SEND_WOULDBLOCK\n" , s->netaddr.sock );
 					}
@@ -251,7 +259,7 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 				}
 				else
 				{
-					if( user_data->output_flag == 1 && s == user_data->p_output_session )
+					if( user_data->output_flag == 1 && user_data->p_output_session == s && GetPxPluginOutputFlag(p_pxplugin_ctx) )
 					{
 						printf( "SendHttpRequestNonblock[%d] ok\n" , s->netaddr.sock );
 					}
@@ -267,7 +275,7 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 					}
 					else
 					{
-						if( user_data->output_flag == 1 && s == user_data->p_output_session )
+						if( user_data->output_flag == 1 && user_data->p_output_session == s && GetPxPluginOutputFlag(p_pxplugin_ctx) )
 						{
 							printf( "epoll_ctl[%d][%d] EPOLL_CTL_MOD ok\n" , user_data->epoll_fd , s->netaddr.sock );
 						}
@@ -279,7 +287,7 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 				nret = ReceiveHttpResponseNonblock( s->netaddr.sock , NULL , s->http_env ) ;
 				if( nret == FASTERHTTP_INFO_NEED_MORE_HTTP_BUFFER )
 				{
-					if( user_data->output_flag == 1 && s == user_data->p_output_session )
+					if( user_data->output_flag == 1 && user_data->p_output_session == s && GetPxPluginOutputFlag(p_pxplugin_ctx) )
 					{
 						printf( "ReceiveHttpResponseNonblock[%d] return FASTERHTTP_INFO_NEED_MORE_HTTP_BUFFER\n" , s->netaddr.sock );
 					}
@@ -291,7 +299,7 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 				}
 				else
 				{
-					if( user_data->output_flag == 1 && s == user_data->p_output_session )
+					if( user_data->output_flag == 1 && user_data->p_output_session == s && GetPxPluginOutputFlag(p_pxplugin_ctx) )
 					{
 						printf( "ReceiveHttpResponseNonblock[%d] ok\n" , s->netaddr.sock );
 						
@@ -321,7 +329,7 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 							epoll_ctl( user_data->epoll_fd , EPOLL_CTL_DEL , s->netaddr.sock , NULL ) ;
 							close( s->netaddr.sock );
 							
-							nret = ConnectToServer( user_data , s ) ;
+							nret = ConnectToServer( p_pxplugin_ctx , user_data , s ) ;
 							if( nret )
 							{
 								printf( "*** ERROR : ConnectToServer failed[%d]\n" , nret );
@@ -355,7 +363,7 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 						}
 						else
 						{
-							if( user_data->output_flag == 1 && s == user_data->p_output_session )
+							if( user_data->output_flag == 1 && user_data->p_output_session == s && GetPxPluginOutputFlag(p_pxplugin_ctx) )
 							{
 								printf( "epoll_ctl[%d][%d] EPOLL_CTL_MOD ok\n" , user_data->epoll_fd , s->netaddr.sock );
 							}
@@ -395,23 +403,12 @@ int CleanPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	
 	user_data = GetPxPluginUserData( p_pxplugin_ctx ) ;
 	
-	/*
-	if( user_data->http_env )
-	{
-		DestroyHttpEnv( user_data->http_env );
-	}
-	
-	if( user_data->netaddr.sock >= 0 )
-	{
-		printf( "disconnect[%s:%d]\n" , user_data->netaddr.ip , user_data->netaddr.port );
-		close( user_data->netaddr.sock ); user_data->netaddr.sock = -1 ;
-	}
-	*/
-	
 	close( user_data->epoll_fd );
 	
 	if( user_data->request )
+	{
 		free( user_data->request );
+	}
 	
 	free( user_data );
 	
