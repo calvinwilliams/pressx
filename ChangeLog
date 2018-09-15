@@ -1,3 +1,6 @@
+0.6.1		2018-09-14	calvin
+		* pxmanager接收pxagent响应，优化为谁先响应谁先处理，之前简单化为顺序处理
+
 0.6.0		2018-09-14	calvin
 		* 合并了版本字符串
 		* 新增函数GetPxPluginOutputFlag，调整了所有插件的首次信息详细输出

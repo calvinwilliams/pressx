@@ -17,7 +17,7 @@ ip port http_request_pathfilename
 */
 
 /* for example
-$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -g pxplugin-http.so -m "192.168.6.21 80 pxplugin-http.txt" -n 1
+$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -g pxplugin-http.so -m "192.168.6.21 80 pxplugin-http.msg" -n 1
 $ pxagent --connect-ip 192.168.6.21 --connect-port 9527
 */
 

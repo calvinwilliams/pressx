@@ -17,6 +17,7 @@ struct PxAcceptedSession
 {
 	struct NetAddress	netaddr ;
 	struct PxRegisteMessage	reg_msg ;
+	unsigned char		response_flag ;
 	
 	struct list_head	listnode ;
 } ;
