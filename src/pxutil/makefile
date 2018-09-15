@@ -35,7 +35,7 @@ CFLAGS		=	$(_CFLAGS) \
 LFLAGS		=	$(_LFLAGS) \
 
 ###### 额外宏定义区
-CLEAN_ADDITION	=	test_msg_tpl.o
+CLEAN_ADDITION	=	test_msg_tpl.o test_msg_tpl
 
 PREMAKE		=
 
