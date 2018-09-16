@@ -1,3 +1,6 @@
+0.6.2		2018-09-16	calvin
+		* 优化了插件pxplugin-http.so和pxplugin-http-fasterhttp.so和pxplugin-http-fasterhttp-IOMP.so的keep-alive
+
 0.6.1		2018-09-14	calvin
 		* pxmanager接收pxagent响应，优化为谁先响应谁先处理，之前简单化为顺序处理
 

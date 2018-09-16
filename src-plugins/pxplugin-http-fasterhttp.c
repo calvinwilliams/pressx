@@ -8,6 +8,7 @@ struct PxPluginUserData
 	unsigned char		output_flag ;
 	char			*request ;
 	int			request_len ;
+	unsigned char		keep_alive ;
 	struct HttpEnv		*http_env ;
 } ;
 
@@ -25,6 +26,9 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 {
 	struct PxPluginUserData	*user_data = NULL ;
 	char			http_request_pathfilename[ PATH_MAX ] ;
+	char			*http__1_0 ;
+	char			*http__1_1 ;
+	char			*connection__keep_alive ;
 	
 	int			nret = 0 ;
 	
@@ -87,6 +91,23 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	{
 		user_data->netaddr.sock = -1 ;
 	}
+	
+	http__1_0 = STRISTR( user_data->request , "HTTP/1.0" ) ;
+	http__1_1 = STRISTR( user_data->request , "HTTP/1.1" ) ;
+	connection__keep_alive = STRISTR( user_data->request , "Connection: Keep-Alive" ) ;
+	if( http__1_0 && connection__keep_alive )
+	{
+		user_data->keep_alive = 1 ;
+	}
+	else if( http__1_1 )
+	{
+		user_data->keep_alive = 1 ;
+	}
+	else
+	{
+		user_data->keep_alive = 0 ;
+	}
+	printf( "keep_alive[%d]\n" , user_data->keep_alive );
 	
 	user_data->http_env = CreateHttpEnv() ;
 	if( user_data->http_env == NULL )
@@ -176,13 +197,12 @@ int RunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 	}
 	
 	nret = CheckHttpKeepAlive( user_data->http_env ) ;
-	if( nret == 0 )
+	if( user_data->keep_alive == 0 || nret == 0 )
 	{
 		if( user_data->output_flag == 1 && GetPxPluginOutputFlag(p_pxplugin_ctx) )
 		{
 			printf( "disconnect[%s:%d]\n" , user_data->netaddr.ip , user_data->netaddr.port );
 		}
-		
 		close( user_data->netaddr.sock ); user_data->netaddr.sock = -1 ;
 	}
 	

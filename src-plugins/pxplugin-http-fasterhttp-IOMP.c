@@ -21,7 +21,7 @@ struct PxPluginUserData
 	unsigned char		output_flag ;
 	struct PxIompSession	*p_output_session ;
 	char			*request ;
-	unsigned char		keepalive_flag ;
+	unsigned char		keep_alive ;
 	int			request_len ;
 	int			iomp_count ;
 	int			total_run_count ;
@@ -35,7 +35,7 @@ ip port http_request_pathfilename iomp_count total_count
 */
 
 /* for example
-$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -g pxplugin-http-fasterhttp-IOMP.so -m "192.168.6.21 80 pxplugin-http.txt 100 100000" -n 1
+$ pxmanager --listen-ip 192.168.6.21 --listen-port 9527 -p 1 -t 1 -g pxplugin-http-fasterhttp-IOMP.so -m "192.168.6.21 80 pxplugin-http.msg 100 100000" -n 1
 $ pxagent --connect-ip 192.168.6.21 --connect-port 9527
 */
 
@@ -44,6 +44,9 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 {
 	struct PxPluginUserData	*user_data = NULL ;
 	char			http_request_pathfilename[ PATH_MAX ] ;
+	char			*http__1_0 ;
+	char			*http__1_1 ;
+	char			*connection__keep_alive ;
 	
 	int			nret = 0 ;
 	
@@ -72,14 +75,22 @@ int InitPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 		return -1;
 	}
 	
-	if( STRISTR( user_data->request , "HTTP/1.1" ) || STRISTR( user_data->request , "Connection: keep-alive" ) )
+	http__1_0 = STRISTR( user_data->request , "HTTP/1.0" ) ;
+	http__1_1 = STRISTR( user_data->request , "HTTP/1.1" ) ;
+	connection__keep_alive = STRISTR( user_data->request , "Connection: Keep-Alive" ) ;
+	if( http__1_0 && connection__keep_alive )
 	{
-		user_data->keepalive_flag = 1 ;
+		user_data->keep_alive = 1 ;
+	}
+	else if( http__1_1 )
+	{
+		user_data->keep_alive = 1 ;
 	}
 	else
 	{
-		user_data->keepalive_flag = 0 ;
+		user_data->keep_alive = 0 ;
 	}
+	printf( "keep_alive[%d]\n" , user_data->keep_alive );
 	
 	user_data->epoll_fd = epoll_create( 1024 ) ;
 	if( user_data->epoll_fd == -1 )
@@ -317,17 +328,20 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 					gettimeofday( & (s->end_delay_timeval) , NULL );
 					SetPxPluginDelayTimeval( p_pxplugin_ctx , & (s->begin_delay_timeval) , & (s->end_delay_timeval) );
 					
-					user_data->output_flag = 0 ;
-					
 					if( run_count + run_iomp_count < user_data->total_run_count )
 					{
-						int		keepalive ;
+						int		reconnect_flag = 0 ;
 						
-						keepalive = CheckHttpKeepAlive( s->http_env ) ;
-						if( keepalive == 0 )
+						nret = CheckHttpKeepAlive( s->http_env ) ;
+						if( user_data->keep_alive == 0 || nret == 0 )
 						{
 							epoll_ctl( user_data->epoll_fd , EPOLL_CTL_DEL , s->netaddr.sock , NULL ) ;
-							close( s->netaddr.sock );
+							
+							if( user_data->output_flag == 1 && GetPxPluginOutputFlag(p_pxplugin_ctx) )
+							{
+								printf( "disconnect[%s:%d]\n" , s->netaddr.ip , s->netaddr.port );
+							}
+							close( s->netaddr.sock ); s->netaddr.sock = -1 ;
 							
 							nret = ConnectToServer( p_pxplugin_ctx , user_data , s ) ;
 							if( nret )
@@ -335,6 +349,7 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 								printf( "*** ERROR : ConnectToServer failed[%d]\n" , nret );
 								return nret;
 							}
+							reconnect_flag = 1 ;
 						}
 						
 						ResetHttpEnv( s->http_env );
@@ -352,7 +367,7 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 						memset( & event , 0x00 , sizeof(struct epoll_event) );
 						event.events = EPOLLOUT | EPOLLERR | EPOLLHUP | EPOLLRDHUP ;
 						event.data.ptr = s ;
-						if( keepalive == 0 )
+						if( reconnect_flag == 1 )
 							nret = epoll_ctl( user_data->epoll_fd , EPOLL_CTL_ADD , s->netaddr.sock , & event ) ;
 						else
 							nret = epoll_ctl( user_data->epoll_fd , EPOLL_CTL_MOD , s->netaddr.sock , & event ) ;
@@ -376,6 +391,8 @@ int RawRunPxPlugin( struct PxPluginContext *p_pxplugin_ctx )
 						free( s );
 						run_iomp_count--;
 					}
+					
+					user_data->output_flag = 0 ;
 					
 					run_count++;
 				}
